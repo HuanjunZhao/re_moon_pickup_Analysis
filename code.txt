@@ -7,7 +7,10 @@ Tested by b@1e00= x (x is map address)
 2d
 2E for storing game score
 F8 fuel line
+30 + 31 = position of the invisible part of the lander
+32 + 33 lander ship pixel pos
 
+3e + 3f = position of the left part of the orbital ship
 11 12 13 low midium high Frequency
 -- BASIC Stub
 1001: 47 10    sre $10          -- 
@@ -88,7 +91,7 @@ F8 fuel line
 1080: 20 A9 14 jsr $14a9		-- TODO
 1083: 20 DD 13 jsr $13dd		--  game logic?? TODO
 1086: 20 00 19 jsr $1900		
-1089: 20 FB 17 jsr $17fb
+1089: 20 FB 17 jsr $17fb	    
 108C: 20 C7 12 jsr $12c7
 108F: A5 1D    lda $1d
 1091: F0 03    beq $1096
@@ -352,7 +355,7 @@ F8 fuel line
 12AA: 85 68    sta $68
 12AC: 20 A9 14 jsr $14a9
 12AF: 20 DD 13 jsr $13dd
-12B2: 20 00 19 jsr $1900
+12B2: 20 00 19 jsr $1900			
 12B5: 20 62 13 jsr $1362
 12B8: 20 94 18 jsr $1894
 12BB: 20 42 17 jsr $1742            -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
@@ -565,7 +568,7 @@ F8 fuel line
 1442: A4 3A    ldy $3a
 1444: B9 28 1C lda $1c28, y
 1447: CA       dex
-1448: 9D 08 1C sta $1c08, x
+1448: 9D 08 1C sta $1c08, x			-- 1c08 <-> 1c28
 144B: 88       dey
 144C: C6 1E    dec $1e
 144E: 10 F4    bpl $1444
@@ -620,19 +623,19 @@ F8 fuel line
 14A8: 60       rts
 
 -- subroutine: 1c08 area into 30 area TODO
-14A9: A9 00    lda #$00
-14AB: A2 06    ldx #$06
-14AD: A0 1F    ldy #$1f
-14AF: 81 30    sta ($30, x)
-14B1: 99 08 1C sta $1c08, y
-14B4: 88       dey
-14B5: CA       dex
-14B6: CA       dex
-14B7: 10 F6    bpl $14af
-14B9: 99 08 1C sta $1c08, y
-14BC: 88       dey
-14BD: 10 FA    bpl $14b9
-14BF: 60       rts
+14A9: A9 00    lda #$00			-- A = 00
+14AB: A2 06    ldx #$06			-- X = 06
+14AD: A0 1F    ldy #$1f			-- Y = 1F
+14AF: 81 30    sta ($30, x)		-- $30 = X
+14B1: 99 08 1C sta $1c08, y		-- 		<-------|
+14B4: 88       dey				-- Y -- 		|
+14B5: CA       dex				-- X --			|
+14B6: CA       dex				-- X -- 		|
+14B7: 10 F6    bpl $14af			------------|
+14B9: 99 08 1C sta $1c08, y		-- store at Y <--|
+14BC: 88       dey				-- Y    		 |
+14BD: 10 FA    bpl $14b9		-----------------|
+14BF: 60       rts				-- return 
 
 -- subroutine: load main game menu, play main menu music
 14C0: A9 05    lda #$05         -- A = 0x05
@@ -1288,7 +1291,7 @@ Unknown ???????
 18FF: 60       rts
 
 
-
+-- subroutine:
 1900: A5 4D    lda $4d
 1902: 29 01    and #$01
 1904: D0 55    bne $195b
@@ -1309,8 +1312,8 @@ Unknown ???????
 1922: D0 02    bne $1926
 1924: E6 3F    inc $3f
 1926: A2 1F    ldx #$1f
-1928: BD 90 1C lda $1c90, x
-192B: 9D 68 1C sta $1c68, x
+1928: BD 90 1C lda $1c90, x		-- load left  orbital docking pad 
+192B: 9D 68 1C sta $1c68, x		-- to image shifting buffer 1c68
 192E: CA       dex
 192F: 10 F7    bpl $1928
 1931: A0 04    ldy #$04
@@ -1319,14 +1322,14 @@ Unknown ???????
 1935: 65 3E    adc $3e
 1937: C9 16    cmp #$16
 1939: B0 05    bcs $1940
-193B: B9 B0 1C lda $1cb0, y
+193B: B9 B0 1C lda $1cb0, y	    -- 1cb0 
 193E: 91 3E    sta ($3e), y
 1940: 88       dey
 1941: 10 F0    bpl $1933
 1943: E6 4C    inc $4c
 1945: 4C 5B 19 jmp $195b
 1948: A2 07    ldx #$07
-194A: 5E 68 1C lsr $1c68, x   orbital docking pad move right
+194A: 5E 68 1C lsr $1c68, x    -- orbital docking pad move right
 194D: 7E 70 1C ror $1c70, x
 1950: 7E 78 1C ror $1c78, x
 1953: 7E 80 1C ror $1c80, x
@@ -1632,7 +1635,7 @@ Unknown ???????
 1C05: 00       brk
 1C06: 00       brk
 1C07: 00       brk
--- 01 
+-- 01 -- current lander image?
 1C08: 00       brk
 1C09: 00       brk
 1C0A: 00       brk
@@ -1784,7 +1787,7 @@ Unknown ???????
                         -- 1c66  . . X . . X . .
                         -- 1c67  . . X . . X . .
 
-						
+
 
 -- image shifting buffer area
 1C68: 00       brk
@@ -1826,7 +1829,7 @@ Unknown ???????
 1C8C: 00       brk
 1C8D: 00       brk
 1C8E: 00       brk
-1C8F: FF        spacecraft
+1C8F: FF        orbital docking pad middle
                 -- 1c88  X X X X X X X X
                 -- 1c89  . . . . . . . .
                 -- 1c8a  . . . . . . . .
@@ -1841,7 +1844,7 @@ Unknown ???????
 1C92: 24 48    bit $48
 1C94: 58       cli
 1C95: A4 C2    ldy $c2
-1C97: 81        left spacecraft
+1C97: 81        left orbital docking pad
                 -- 1c90  . . . . . X X X
                 -- 1c91  . . . X X . X .
                 -- 1c92  . . X . . X . .
@@ -1885,7 +1888,7 @@ FF    sta ($ff, x)
 
 
 
-        00    sta ($00, x)
+1CA8: 00    sta ($00, x)
 1CA9: 00       brk
 1CAA: 00       brk
 1CAB: 00       brk
@@ -1893,14 +1896,21 @@ FF    sta ($ff, x)
 1CAD: 00       brk
 1CAE: 00       brk
 1CAF: 00       brk
+
+
 1CB0: 0D 0E 11 ora $110e
 1CB3: 0F 10 00 slo $0010
 1CB6: 00       brk
 1CB7: 00       brk
+
+
 1CB8: 00       brk
 1CB9: FD EE ED sbc $edee, x
 1CBC: F0 FE    beq $1cbc
-1CBE: FB FC EC isb $ecfc, y
+1CBE: FB FC 
+
+
+1cc0: EC isb $ecfc, y
 1CC1: CE CD CD dec $cdcd
 1CC4: CE D5 CA dec $cad5
 1CC7: C9 CB    cmp #$cb
@@ -1943,6 +1953,9 @@ FF    sta ($ff, x)
 1CFD: 00       brk
 1CFE: 00       brk
 1CFF: EF FF 00 isb $00ff
+
+
+
 1D02: 00       brk
 1D03: E3 1F    isb ($1f, x)
 

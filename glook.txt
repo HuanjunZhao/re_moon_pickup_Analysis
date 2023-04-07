@@ -229,6 +229,7 @@
 1cb6  . . . . . . . . 
 1cb7  . . . . . . . . 
 
+-- set
 1cb8  . . . . . . . . 
 1cb9  x x x x x x . x 
 1cba  x x x . x x x . 
@@ -238,6 +239,7 @@
 1cbe  x x x x x . x x 
 1cbf  x x x x x x . . 
 
+-- set
 1cc0  x x x . x x . . 
 1cc1  x x . . x x x . 
 1cc2  x x . . x x . x 
@@ -247,6 +249,7 @@
 1cc6  x x . . x . x . 
 1cc7  x x . . x . . x 
 
+-- set
 1cc8  x x . . x . x x 
 1cc9  . . . . . . . . 
 1cca  . . . . . . . . 
@@ -255,6 +258,8 @@
 1ccd  x x x . . x . x 
 1cce  x . . x . x x x 
 1ccf  x x x . . x x x 
+
+-- set
 1cd0  x . . x . x x x 
 1cd1  x x x . x . . x 
 1cd2  x . . x . x x x 
@@ -263,6 +268,8 @@
 1cd5  x x x x . x x . 
 1cd6  x . . x . x x x 
 1cd7  x x x x x . . . 
+
+-- set
 1cd8  x . . x . x x x 
 1cd9  . x x . . . . . 
 1cda  . . . x x . x x 
@@ -271,34 +278,37 @@
 1cdd  x x x . . . . . 
 1cde  . . . x x . x x 
 1cdf  x x x x . . . . 
+
+-- set
 1ce0  . . . x x . x x 
 1ce1  . . . . . . . . 
 1ce2  . . . . . . . . 
 1ce3  . . . . . . . . 
 1ce4  . . . . . . . . 
-
 1ce5  . . x . x x x . 
 1ce6  . . . x x x x . 
 1ce7  . x . . . x . . 
+
+-- set
 1ce8  . . . x x x x . 
 1ce9  . . x . x x x x 
 1cea  . . . x x x x . 
 1ceb  . x . . . x . x 
 1cec  . . . x x x x . 
-
 1ced  . . . . . . x . 
 1cee  . . . . . . x . 
 1cef  . . . x . x x x 
+
 1cf0  . . . . . . . x 
 1cf1  x x x x x x x x 
 1cf2  . . . . . . x x 
 1cf3  x x x x x x x x 
 1cf4  . . . x x x . x 
-
-
 1cf5  . . . . . . . . 
 1cf6  . . . x . . . . 
 1cf7  . . . . . . . . 
+
+-- set
 1cf8  . . . x . . . . 
 1cf9  x . . . . . . . 
 1cfa  . . . . . . . . 
@@ -307,6 +317,8 @@
 1cfd  . . . . . . . . 
 1cfe  . . . . . . . . 
 1cff  x x x . x x x x 
+
+-- set
 1d00  x x x x x x x x 
 1d01  . . . . . . . . 
 1d02  . . . . . . . . 
@@ -315,6 +327,8 @@
 1d05  x . . . . x x x 
 1d06  x . . . . . . x 
 1d07  x . . . x x . x 
+
+-- set
 1d08  x . . . . x . x 
 1d09  x . x . . . . . 
 1d0a  x . . . x x x x 
@@ -323,6 +337,8 @@
 1d0d  x . . x . . x . 
 1d0e  x . x . . . . x 
 1d0f  . . . . . . . . 
+
+-- set
 1d10  x . . . x . . . 
 1d11  x . . . x . . x 
 1d12  x . . . . x x x 
@@ -331,6 +347,8 @@
 1d15  x . . x . . x x 
 1d16  x . . . . . x x 
 1d17  x . . . x x x x 
+
+-- set
 1d18  x . . x . . x . 
 1d19  x . . . . x . x 
 1d1a  . . . . . . . . 
@@ -339,6 +357,8 @@
 1d1d  . . . . . . . . 
 1d1e  . . . . . . . . 
 1d1f  . . . . . . . . 
+
+-- set
 1d20  . . . . . . . . 
 1d21  . . . . . . x . 
 1d22  . . x . . . . . 
@@ -347,6 +367,8 @@
 1d25  . . x . . . . . 
 1d26  . x . . . . . . 
 1d27  . . . x . . x . 
+
+-- set
 1d28  . . x . . . . . 
 1d29  . . . . . . . x 
 1d2a  . . . . x . . x 
@@ -355,6 +377,8 @@
 1d2d  . . x x . x . x 
 1d2e  . . x . . . . . 
 1d2f  . x . x . . . . 
+
+-- set
 1d30  . x . . . . . . 
 1d31  . . x . . . . . 
 1d32  . . x . . . . . 

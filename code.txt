@@ -1,3 +1,14 @@
+Huanjun Zhao 30102350
+b0-b9 is special char set for 0-9
+81-9A is special char set for A-Z
+Tested by b@1e00= x (x is map address)
+05-14 is game's special char set
+1b, 1c"
+2d
+2E for storing game score
+F8 fuel line
+
+11 12 13 low midium high Frequency
 -- BASIC Stub
 1001: 47 10    sre $10          -- 
 1003: 0A       asl a            --
@@ -35,7 +46,7 @@
 1047: 00       brk
 1048: 00       brk
 
--- machine language program st  art
+-- machine language program start
 1049: 78       sei              -- start of the program, set Interrupt -> disable interrupt
 104A: D8       cld              -- clear decimal mode flag (a bit in Processor Status register P), 
                                 -- ensure 6502 uses the expected binary arithmetic for all instructions
@@ -70,13 +81,13 @@
 1072: 85 2D    sta $2d          -- $2d = A 
 
 1074: 20 90 17 jsr $1790        -- clear the sreen, put up colonists and landers, and set colonists color, load score
-1077: 20 D0 17 jsr $17d0        -- 
+1077: 20 D0 17 jsr $17d0        -- game initialization
 
-107A: 20 94 18 jsr $1894        -- 
+107A: 20 94 18 jsr $1894        -- play sound
 107D: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
-1080: 20 A9 14 jsr $14a9
-1083: 20 DD 13 jsr $13dd
-1086: 20 00 19 jsr $1900
+1080: 20 A9 14 jsr $14a9		-- TODO
+1083: 20 DD 13 jsr $13dd		--  game logic?? TODO
+1086: 20 00 19 jsr $1900		
 1089: 20 FB 17 jsr $17fb
 108C: 20 C7 12 jsr $12c7
 108F: A5 1D    lda $1d
@@ -489,6 +500,9 @@
 13D8: 85 45    sta $45
 13DA: F0 C5    beq $13a1
 13DC: 60       rts
+
+
+- subroutine game logic part? TODO
 13DD: A5 41    lda $41
 13DF: 4A       lsr a
 13E0: 4A       lsr a
@@ -604,6 +618,8 @@
 14A5: 4A       lsr a
 14A6: 85 1F    sta $1f
 14A8: 60       rts
+
+-- subroutine: 1c08 area into 30 area TODO
 14A9: A9 00    lda #$00
 14AB: A2 06    ldx #$06
 14AD: A0 1F    ldy #$1f
@@ -689,7 +705,7 @@
 154C: 85 68    sta $68
 154E: 20 1E EB jsr $eb1e        -- get keyboard input 
 1551: 20 42 17 jsr $1742        -- jump to $1742, load $9004 to A until zero, TV raster beam line
-1554: 20 94 18 jsr $1894        
+1554: 20 94 18 jsr $1894        -- play sound
 1557: E6 11    inc $11
 1559: D0 0F    bne $156a
 155B: C6 6F    dec $6f
@@ -1056,8 +1072,8 @@ Unknown ???????
 178D: D0 E2    bne $1771
 178F: 60       rts
 
--- clear the screen, put up colonists and landers, and set colonists color
-1790: A5 10    lda $10                  -- A = $10 = ???
+-- clear the screen, put up colonists and landers, and set colonists color, 
+1790: A5 10    lda $10                  -- A = $10 = FF at the first time
 1792: 85 11    sta $11                  -- $11 = $10 
 1794: 20 2A 17 jsr $172a                -- clear the screen
 1797: A9 00    lda #$00                 -- A = 0
@@ -1073,7 +1089,7 @@ Unknown ???????
 17AB: A9 05    lda #$05                 -- set colonist color green
 17AD: 81 20    sta ($20, x)             -- read $20 area, astrronauts Status color repersentation
 17AF: CA       dex                      -- X-- 
-17B0: CA       dex                      -- X-- 隔一个打印一个飞船or人
+17B0: CA       dex                      -- X-- Print a ship every other pixel block, Print colonists every other pixel block,
 17B1: 10 EE    bpl $17a1                -- back to top of the loop
 17B3: 20 83 15 jsr $1583                -- generate the map, put up colonists
 17B6: 20 5B 17 jsr $175b                -- set score board to zeros     
@@ -1093,40 +1109,47 @@ Unknown ???????
 
 
 
--- subroutine
+-- subroutine game initialization
 
 -- set third lander to yellow, i.e, the third lander is in use 
 17D0: A5 1B    lda $1b                  -- A = $1b = 2 = 0b00000010
 17D2: 0A       asl a                    -- A = 0b00000010 << 1 = 0b00000100 = 4
 17D3: AA       tax                      -- X = A = 4
 17D4: A9 07    lda #$07                 -- A = 07
-17D6: 81 26    sta ($26, x)             -- $97f8 = 07 = Yellow
+17D6: 81 26    sta ($26, x)             -- $97f8 = 07 = Yellow -> first lander color yellow -> in use
 
-17D8: 20 5E 19 jsr $195e                -- 
-17DB: A2 0F    ldx #$0f
-17DD: BD E5 1C lda $1ce5, x
+17D8: 20 5E 19 jsr $195e                -- clear addr 3e+y to 0. 
+
+// Copy 1ce5 area and 1cf5 area to 30 and 40 area
+17DB: A2 0F    ldx #$0f                 
+17DD: BD E5 1C lda $1ce5, x                     -- load screen area 1cf4 into a, first time is 1d
 17E0: 95 30    sta $30, x
 17E2: BD F5 1C lda $1cf5, x
 17E5: 95 40    sta $40, x
 17E7: CA       dex
 17E8: 10 F3    bpl $17dd
+
+-- print fuel remaining line
 17EA: A2 15    ldx #$15
 17EC: A9 F8    lda #$f8
 17EE: 9D CE 1F sta $1fce, x
 17F1: CA       dex
 17F2: 10 FA    bpl $17ee
+
+
 17F4: A5 2D    lda $2d
 17F6: 85 2C    sta $2c
-17F8: 4C 83 15 jmp $1583
+17F8: 4C 83 15 jmp $1583		-- generate the map, put up colonists
+
 17FB: A2 04    ldx #$04
 17FD: A0 02    ldy #$02
 17FF: B9 18 00 lda $0018, y
 1802: D0 0A    bne $180e
-1804: A9 0B    lda #$0b
+1804: A9 0B    lda #$0b		-- colonist character set with hands down
 1806: C4 1F    cpy $1f
 1808: D0 02    bne $180c
-180A: A9 0C    lda #$0c                  -- A = 0C = colonist
-180C: 81 50    sta ($50, x)
+180A: A9 0C    lda #$0c    	-- colonist character set with hands up
+180C: 81 50    sta ($50, x)	-- put 2 hands-down colonists, 1 hands-up colonist on the screen
 180E: CA       dex
 180F: CA       dex
 1810: 88       dey
@@ -1200,10 +1223,13 @@ Unknown ???????
 1886: CA       dex
 1887: 10 F8    bpl $1881
 1889: A9 00    lda #$00
-188B: 8D 0D 90 sta $900d
+188B: 8D 0D 90 sta $900d$69
 188E: A9 09    lda #$09
 1890: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
 1893: 60       rts
+
+-- subroutine to play sounds
+
 1894: A4 68    ldy $68
 1896: F0 58    beq $18f0
 1898: 88       dey
@@ -1251,6 +1277,8 @@ Unknown ???????
 18EB: 84 12    sty $12
 18ED: C6 13    dec $13
 18EF: 60       rts
+
+
 18F0: A9 00    lda #$00
 18F2: 8D 0A 90 sta $900a
 18F5: 8D 0B 90 sta $900b
@@ -1258,6 +1286,9 @@ Unknown ???????
 18FB: 85 68    sta $68
 18FD: 85 12    sta $12
 18FF: 60       rts
+
+
+
 1900: A5 4D    lda $4d
 1902: 29 01    and #$01
 1904: D0 55    bne $195b
@@ -1295,7 +1326,7 @@ Unknown ???????
 1943: E6 4C    inc $4c
 1945: 4C 5B 19 jmp $195b
 1948: A2 07    ldx #$07
-194A: 5E 68 1C lsr $1c68, x
+194A: 5E 68 1C lsr $1c68, x   orbital docking pad move right
 194D: 7E 70 1C ror $1c70, x
 1950: 7E 78 1C ror $1c78, x
 1953: 7E 80 1C ror $1c80, x
@@ -1495,12 +1526,12 @@ Unknown ???????
 1B56: FF FF FF isb $ffff, x
 1B59: FF FF FF isb $ffff, x
 1B5C: FF FF FF isb $ffff, x
+1B5F: FF 			isb
 --- end of null parts
 
 
-
-
-1B5F: FF 25 07 isb $0725, x
+-- audio data part
+1B60: 25 07  $0725, x
 1B62: E1 CF    sbc ($cf, x)
 1B64: AF 21 00 lax $0021
 1B67: 12       kil
@@ -1591,7 +1622,7 @@ Unknown ???????
 1BFD: 02       kil
 1BFE: D0 00    bne $1c00
 
-
+-- special characters set memory area
 -- 00
 1C00: 00       brk
 1C01: 00       brk
@@ -1753,6 +1784,9 @@ Unknown ???????
                         -- 1c66  . . X . . X . .
                         -- 1c67  . . X . . X . .
 
+						
+
+-- image shifting buffer area
 1C68: 00       brk
 1C69: 00       brk
 1C6A: 00       brk
@@ -1888,6 +1922,8 @@ FF    sta ($ff, x)
 1CE2: 00       brk
 1CE3: 00       brk
 1CE4: 00       brk
+
+-- 30 - 3F maybe glook?
 1CE5: 2E 1E 44 rol $441e
 1CE8: 1E 2F 1E asl $1e2f, x
 1CEB: 45 1E    eor $1e
@@ -1895,7 +1931,10 @@ FF    sta ($ff, x)
 1CEE: 02       kil
 1CEF: 17 01    slo $01, x
 1CF1: FF 03 FF isb $ff03, x
-1CF4: 1D 00 10 ora $1000, x
+1CF4: 1D	   ora    
+
+-- 40 - 4F
+1CF5: 00 10    $1000, x
 1CF7: 00       brk
 1CF8: 10 80    bpl $1c7a
 1CFA: 00       brk
@@ -1906,6 +1945,8 @@ FF    sta ($ff, x)
 1CFF: EF FF 00 isb $00ff
 1D02: 00       brk
 1D03: E3 1F    isb ($1f, x)
+
+
 1D05: 87 81    sax $81
 1D07: 8D 85 A0 sta $a085
 1D0A: 8F 96 85 sax $8596
@@ -1914,7 +1955,7 @@ FF    sta ($ff, x)
 1D10: 88       dey
 1D11: 89 87    nop #$87
 1D13: 88       dey
-1D14: A0 93    ldy #$93
+1D14: A0 93    ldy #$93         -- 17DD modify
 1D16: 83 8F    sax ($8f, x)
 1D18: 92       kil
 1D19: 85 00    sta $00

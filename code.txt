@@ -4,15 +4,13 @@ b0-b9 is special char set for 0-9
 Tested by b@1e00= x (x is map address)
 05-14 is game's special char set
 1b, 1c"
-2D: 
-2E: current game score
-2F: 
-1D: if the lander exploded
-F8: fuel line
-30 + 31 = position of the invisible part of the lander
-32 + 33 lander ship pixel pos
-
-
+1f which colonist hands is up
+2d
+2E for storing game score
+F8 fuel line
+32 + 33 = position of the invisible part of the lander
+30 + 31 lander ship pixel pos
+4e+4f = fuel remaining
 3e + 3f = position of the left part of the orbital ship
 11 12 13 low midium high Frequency
 3A: lander orientation + fuel or not
@@ -111,7 +109,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 
 1096: 20 62 13 jsr $1362        -- 
 1099: 4C 7A 10 jmp $107a
-109C: A9 1E    lda #$1e
+
+109C: A9 1E    lda #$1e         -- 1e8a -> GAME OVER!
 109E: 85 15    sta $15
 10A0: A9 8A    lda #$8a
 10A2: 85 14    sta $14
@@ -230,7 +229,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1193: C6 1B    dec $1b
 1195: 30 03    bmi $119a
 1197: 4C 77 10 jmp $1077
-119A: 4C 9C 10 jmp $109c
+119A: 4C 9C 10 jmp $109c                -- game end??
 119D: A4 1F    ldy $1f
 119F: A9 02    lda #$02
 11A1: 99 18 00 sta $0018, y
@@ -254,7 +253,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 11C3: F0 D8    beq $119d                -- 
 11C5: C9 0C    cmp #$0c                 -- check if it is 0C <-> colonist
 11C7: F0 D4    beq $119d                -- 
-11C9: C9 86    cmp #$86                 -- 86: 
+11C9: C9 86    cmp #$86                 -- -- 04-> 84 -> 86
 11CB: D0 97    bne $1164                -- 
 11CD: A5 3A    lda $3a                  -- 
 11CF: 29 10    and #$10
@@ -300,7 +299,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1222: 20 DD 13 jsr $13dd
 1225: A9 E3    lda #$e3             -- E3: safe landing ground
 1227: A2 00    ldx #$00
-1229: 86 1D    stx $1d
+1229: 86 1D    stx $1d                  -- set 1d to 00 ship pick up a colonist finisheds
 122B: 81 14    sta ($14, x)
 122D: A2 02    ldx #$02
 122F: 81 14    sta ($14, x)
@@ -380,10 +379,10 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 12C4: 4C 74 10 jmp $1074
 
 
--- subroutine: 
-12C7: A5 3A    lda $3a                  -- A = 37
+-- subroutine ship control logic, calculate feul and update fuel line
+12C7: A5 3A    lda $3a                  -- 
 12C9: 29 37    and #$37                 -- 37
-12CB: 85 3A    sta $3a                  -- $3a = A
+12CB: 85 3A    sta $3a                  -- A = $3a
 12CD: A9 00    lda #$00                 -- A = 00
 12CF: 8D 0D 90 sta $900d                -- noise 
 12D2: A5 5E    lda $5e                  -- $5e = A
@@ -397,14 +396,14 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 12E2: C9 09    cmp #$09                 -- key W 
 12E4: F0 2A    beq $1310                -- put lander straight
 12E6: C9 12    cmp #$12                 -- key D
-12E8: F0 3A    beq $1324                -- move right 
+12E8: F0 3A    beq $1324                -- move right
 12EA: C9 20    cmp #$20                 -- key Space 
 12EC: F0 50    beq $133e                -- move up
 12EE: C9 0F    cmp #$0f                 -- key Enter
 12F0: D0 6F    bne $1361                -- lander explode 
 -- set lander explosion flag
 12F2: A9 80    lda #$80                 -- A = 80
-12F4: 85 1D    sta $1d                  -- 1d = 80 > lander exploded  
+12F4: 85 1D    sta $1d                  -- 1d = 80 > lander exploded
 12F6: D0 69    bne $1361                -- return
 -- A: move left
 12F8: A5 3B    lda $3b                  -- if not moving
@@ -460,13 +459,12 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1355: D0 0A    bne $1361                -- return 
 1357: A0 00    ldy #$00                 -- Y = 0
 1359: 91 4E    sta ($4e), y             -- decrease fuel line 
-135B: C6 4E    dec $4e                  -- 
+135B: C6 4E    dec $4e                  -- when pointer to 1FCE, no fuel
 135D: A5 2D    lda $2d                  -- maximum fuel per slot
 135F: 85 2C    sta $2c                  -- reload maximum fuel for this slot
-1361: 60       rts                      -- return 
+1361: 60       rts                      -- return
 
 
--- 
 1362: AD 0D 90 lda $900d
 1365: F0 1A    beq $1381
 1367: 18       clc
@@ -617,33 +615,37 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 146D: A0 04    ldy #$04
 146F: A1 30    lda ($30, x)         -- read lander position
 1471: F0 23    beq $1496
-1473: C9 E3    cmp #$e3             -- E3: safe landing groud
+1473: C9 E3    cmp #$e3             -- copmare the 8x8 pixel with e3 -> e3 is safe landing ground
 1475: D0 07    bne $147e
-1477: 98       tya
+1477: 98       tya                  -- if it is safe landing ground -> 
 1478: 05 1D    ora $1d
 
+-- no event for ship
+147A: 85 1D    sta $1d              -- ship landed at ground -> set 04 into 1d
+147C: D0 12    bne $1490            -- if 1d is not 0 -> no event occured, goto 1490 else -> event occured
 
-147A: 85 1D    sta $1d
-147C: D0 12    bne $1490
-147E: C9 0C    cmp #$0c                 -- lander collided with 0C <-> colonist
-1480: D0 06    bne $1488                --
-1482: 05 1D    ora $1d                  --
-1484: 85 1D    sta $1d                  --
-1486: D0 0E    bne $1496                -- 
+-- event: hit colonist
+147E: C9 0C    cmp #$0c             -- check if it is 0C <-> colonist, the ship hit the colonist
+1480: D0 06    bne $1488            -- if not hit the colonist, goto 1488, else handle the event ship hit the colonist
+1482: 05 1D    ora $1d
+1484: 85 1D    sta $1d              -- if the ship hit the colonist -> set 0c into 1d
+1486: D0 0E    bne $1496
 
--- lander returns to the orbital docking pad
-1488: C9 11    cmp #$11                 -- lander colllided with 11 <-> orbital docking pad
+-- event: return to orbital docking pad
+1488: C9 11    cmp #$11
 148A: D0 04    bne $1490
 148C: A9 0F    lda #$0f
 148E: 85 1D    sta $1d
 
--- 
--- 
+
+-- event1: colonist picked up
+-- event2: ship dead
+-- protential 1d value: 04, 00
 1490: A9 80    lda #$80
-1492: 05 1D    ora $1d
-1494: 85 1D    sta $1d
-1496: 98       tya                      
-1497: 81 30    sta ($30, x)             -- set lander position
+1492: 05 1D    ora $1d                  -- protential 1d value: 84, 80 -> 80 ship dead, 84 colonist picked up
+1494: 85 1D    sta $1d                  -- set 1d value into 1d
+1496: 98       tya
+1497: 81 30    sta ($30, x)        -- set lander position
 1499: 88       dey
 149A: CA       dex
 149B: CA       dex
@@ -1663,7 +1665,7 @@ Unknown ???????
 1BFE: D0 00    bne $1c00
 
 -- special characters set memory area
--- 00
+-- 00  reserved for ship - currently not used
 1C00: 00       brk
 1C01: 00       brk
 1C02: 00       brk
@@ -1672,7 +1674,9 @@ Unknown ???????
 1C05: 00       brk
 1C06: 00       brk
 1C07: 00       brk
--- 01 -- current lander image?
+
+-- 01-04-> when ship is moving, it can only oucupy 4 8*8 pixels  0407 6pm finding
+-- 01 -- shifting ship left top part
 1C08: 00       brk
 1C09: 00       brk
 1C0A: 00       brk
@@ -1681,7 +1685,8 @@ Unknown ???????
 1C0D: 00       brk
 1C0E: 00       brk
 1C0F: 00       brk
--- 02
+
+-- 02 -- shifting ship left bottom part
 1C10: 00       brk
 1C11: 00       brk
 1C12: 00       brk
@@ -1690,7 +1695,8 @@ Unknown ???????
 1C15: 00       brk
 1C16: 00       brk
 1C17: 00       brk
--- 03
+
+-- 03 -- shifting ship right top part
 1C18: 00       brk
 1C19: 00       brk
 1C1A: 00       brk
@@ -1699,7 +1705,8 @@ Unknown ???????
 1C1D: 00       brk
 1C1E: 00       brk
 1C1F: 00       brk
--- 04
+
+-- 04 -- shifting ship right bottom part
 1C20: 00       brk
 1C21: 00       brk
 1C22: 00       brk
@@ -1971,7 +1978,7 @@ FF    sta ($ff, x)
 1CE4: 00       brk
 
 -- 30 - 3F maybe glook?
-1CE5: 2E 1E 44 rol $441e
+1CE5: 2E 1E 44 rol $441e                -- 17DD modify
 1CE8: 1E 2F 1E asl $1e2f, x
 1CEB: 45 1E    eor $1e
 1CED: 02       kil
@@ -1997,23 +2004,23 @@ FF    sta ($ff, x)
 1D03: E3 1F    isb ($1f, x)
 
 
-1D05: 87 81    sax $81
-1D07: 8D 85 A0 sta $a085
-1D0A: 8F 96 85 sax $8596
-1D0D: 92       kil
-1D0E: A1 00    lda ($00, x)
-1D10: 88       dey
-1D11: 89 87    nop #$87
-1D13: 88       dey
-1D14: A0 93    ldy #$93         -- 17DD modify
-1D16: 83 8F    sax ($8f, x)
-1D18: 92       kil
-1D19: 85 00    sta $00
-1D1B: 00       brk
-1D1C: 00       brk      -- game score
-1D1D: 00       brk      -- first character of the user name
-1D1E: 00       brk      -- second character of the user name
-1D1F: 00       brk      -- third charactter of the user name
+1D05: 87 81    sax $81          -- G, A
+1D07: 8D 85 A0 sta $a085        -- M, E, " "
+1D0A: 8F 96 85 sax $8596        -- O, V, E
+1D0D: 92       kil              -- R
+1D0E: A1 00    lda ($00, x)     -- "!", " "
+1D10: 88       dey              -- "H"
+1D11: 89 87    nop #$87         -- "I", "G"
+1D13: 88       dey              -- "H"
+1D14: A0 93    ldy #$93         -- " ", "S"
+1D16: 83 8F    sax ($8f, x)     -- "C", "O"
+1D18: 92       kil              -- "R"
+1D19: 85 00    sta $00          -- "E"
+1D1B: 00       brk              -- highest score storage
+1D1C: 00       brk              -- highest score storage
+1D1D: 00       brk              -- first character of the user name
+1D1E: 00       brk              -- second character of the user name
+1D1F: 00       brk              -- third charactter of the user name
 1D20: 00       brk
 1D21: 02       kil
 1D22: 20 01 11 jsr $1101

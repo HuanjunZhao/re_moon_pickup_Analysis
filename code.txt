@@ -1965,7 +1965,7 @@ FF    sta ($ff, x)
 1CE4: 00       brk
 
 -- 30 - 3F maybe glook?
-1CE5: 2E 1E 44 rol $441e
+1CE5: 2E 1E 44 rol $441e                -- 17DD modify
 1CE8: 1E 2F 1E asl $1e2f, x
 1CEB: 45 1E    eor $1e
 1CED: 02       kil
@@ -1991,23 +1991,23 @@ FF    sta ($ff, x)
 1D03: E3 1F    isb ($1f, x)
 
 
-1D05: 87 81    sax $81
-1D07: 8D 85 A0 sta $a085
-1D0A: 8F 96 85 sax $8596
-1D0D: 92       kil
-1D0E: A1 00    lda ($00, x)
-1D10: 88       dey
-1D11: 89 87    nop #$87
-1D13: 88       dey
-1D14: A0 93    ldy #$93         -- 17DD modify
-1D16: 83 8F    sax ($8f, x)
-1D18: 92       kil
-1D19: 85 00    sta $00
-1D1B: 00       brk
-1D1C: 00       brk
-1D1D: 00       brk      -- first character of the user name
-1D1E: 00       brk      -- second character of the user name
-1D1F: 00       brk      -- third charactter of the user name
+1D05: 87 81    sax $81          -- G, A
+1D07: 8D 85 A0 sta $a085        -- M, E, " "
+1D0A: 8F 96 85 sax $8596        -- O, V, E
+1D0D: 92       kil              -- R
+1D0E: A1 00    lda ($00, x)     -- "!", " "
+1D10: 88       dey              -- "H"
+1D11: 89 87    nop #$87         -- "I", "G"
+1D13: 88       dey              -- "H"
+1D14: A0 93    ldy #$93         -- " ", "S"
+1D16: 83 8F    sax ($8f, x)     -- "C", "O"
+1D18: 92       kil              -- "R"
+1D19: 85 00    sta $00          -- "E"
+1D1B: 00       brk              -- highest score storage
+1D1C: 00       brk              -- highest score storage
+1D1D: 00       brk              -- first character of the user name
+1D1E: 00       brk              -- second character of the user name
+1D1F: 00       brk              -- third charactter of the user name
 1D20: 00       brk
 1D21: 02       kil
 1D22: 20 01 11 jsr $1101

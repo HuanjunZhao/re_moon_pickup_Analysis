@@ -4,14 +4,26 @@ b0-b9 is special char set for 0-9
 Tested by b@1e00= x (x is map address)
 05-14 is game's special char set
 1b, 1c"
-2d
-2E for storing game score
-F8 fuel line
+2D: 
+2E: current game score
+2F: 
+1D: if the lander exploded
+F8: fuel line
 30 + 31 = position of the invisible part of the lander
 32 + 33 lander ship pixel pos
 
+
 3e + 3f = position of the left part of the orbital ship
 11 12 13 low midium high Frequency
+3A: lander orientation + fuel or not
+3E: orbital left position 1
+3F: orbital left position 2
+
+
+keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
+
+1F: which colonist puts hand up
+ 
 -- BASIC Stub
 1001: 47 10    sre $10          -- 
 1003: 0A       asl a            --
@@ -74,7 +86,7 @@ F8 fuel line
                                     -- set score board to zeros
 
 1065: 20 66 17 jsr $1766        -- jump to subroutine at $1766
-                                        -- set the colors for landers on the  bottom right 
+                                        -- set the colors for landers on the bottom right 
 
 1068: A9 02    lda #$02         -- A = 0x02  
 106A: 85 1B    sta $1b          -- $1b = A  
@@ -90,13 +102,14 @@ F8 fuel line
 107D: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
 1080: 20 A9 14 jsr $14a9		-- TODO
 1083: 20 DD 13 jsr $13dd		--  game logic?? TODO
-1086: 20 00 19 jsr $1900		
-1089: 20 FB 17 jsr $17fb	    
-108C: 20 C7 12 jsr $12c7
-108F: A5 1D    lda $1d
-1091: F0 03    beq $1096
-1093: 4C BD 11 jmp $11bd
-1096: 20 62 13 jsr $1362
+1086: 20 00 19 jsr $1900	-- 1900: move orbital docking pad
+1089: 20 FB 17 jsr $17fb	-- 17fb: switch which colonist hands up
+108C: 20 C7 12 jsr $12c7        -- 12c7: get keyboard input and update lander 
+108F: A5 1D    lda $1d          -- check if lander exploded
+1091: F0 03    beq $1096        -- 
+1093: 4C BD 11 jmp $11bd        -- check lander status, and trigger corresponding events
+
+1096: 20 62 13 jsr $1362        -- 
 1099: 4C 7A 10 jmp $107a
 109C: A9 1E    lda #$1e
 109E: 85 15    sta $15
@@ -171,7 +184,7 @@ F8 fuel line
 112E: B0 98    bcs $10c8
 1130: A9 05    lda #$05
 1132: 85 6F    sta $6f
-1134: 20 1E EB jsr $eb1e
+1134: 20 1E EB jsr $eb1e        -- get keyboard input
 1137: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
 113A: 20 94 18 jsr $1894
 113D: E6 11    inc $11
@@ -179,12 +192,12 @@ F8 fuel line
 1141: C6 6F    dec $6f
 1143: D0 03    bne $1148
 1145: 4C 4B 10 jmp $104b
-1148: A5 C5    lda $c5
+1148: A5 C5    lda $c5          -- 
 114A: C9 40    cmp #$40
 114C: F0 E6    beq $1134
 114E: 20 38 17 jsr $1738
 1151: 4C 4B 10 jmp $104b
-1154: 20 1E EB jsr $eb1e
+1154: 20 1E EB jsr $eb1e        -- get keyboard input
 1157: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
 115A: 20 94 18 jsr $1894
 115D: A5 C5    lda $c5
@@ -233,15 +246,17 @@ F8 fuel line
 11B6: A9 00    lda #$00
 11B8: 85 1D    sta $1d
 11BA: 4C 96 10 jmp $1096
-11BD: C9 8F    cmp #$8f
-11BF: F0 76    beq $1237
-11C1: C9 8C    cmp #$8c
-11C3: F0 D8    beq $119d
+
+-- subroutine: check lander status at $1d, update the lander with corresponding events
+11BD: C9 8F    cmp #$8f                 -- 8F: the lander reattaches to orbital docking pad
+11BF: F0 76    beq $1237                -- 
+11C1: C9 8C    cmp #$8c                 -- 8C: 
+11C3: F0 D8    beq $119d                -- 
 11C5: C9 0C    cmp #$0c                 -- check if it is 0C <-> colonist
-11C7: F0 D4    beq $119d                
-11C9: C9 86    cmp #$86
-11CB: D0 97    bne $1164
-11CD: A5 3A    lda $3a
+11C7: F0 D4    beq $119d                -- 
+11C9: C9 86    cmp #$86                 -- 86: 
+11CB: D0 97    bne $1164                -- 
+11CD: A5 3A    lda $3a                  -- 
 11CF: 29 10    and #$10
 11D1: F0 91    beq $1164
 11D3: A5 47    lda $47
@@ -283,7 +298,7 @@ F8 fuel line
 121C: 99 14 00 sta $0014, y
 121F: 20 A9 14 jsr $14a9
 1222: 20 DD 13 jsr $13dd
-1225: A9 E3    lda #$e3             -- E3: leveled ground
+1225: A9 E3    lda #$e3             -- E3: safe landing ground
 1227: A2 00    ldx #$00
 1229: 86 1D    stx $1d
 122B: 81 14    sta ($14, x)
@@ -328,7 +343,7 @@ F8 fuel line
 127A: 38       sec
 127B: E5 1C    sbc $1c
 127D: 85 2D    sta $2d
-127F: A5 4E    lda $4e
+127F: A5 4E    lda $4e                  -- fuel line
 1281: 38       sec
 1282: E9 CE    sbc #$ce        
 1284: 0A       asl a
@@ -363,82 +378,95 @@ F8 fuel line
 12C0: C9 A7    cmp #$a7
 12C2: 90 E8    bcc $12ac
 12C4: 4C 74 10 jmp $1074
-12C7: A5 3A    lda $3a
-12C9: 29 37    and #$37
-12CB: 85 3A    sta $3a
-12CD: A9 00    lda #$00
-12CF: 8D 0D 90 sta $900d
-12D2: A5 5E    lda $5e
-12D4: F0 03    beq $12d9
-12D6: 4C 70 19 jmp $1970
-12D9: 20 1E EB jsr $eb1e
-12DC: A5 C5    lda $c5
-12DE: C9 11    cmp #$11
-12E0: F0 16    beq $12f8
-12E2: C9 09    cmp #$09
-12E4: F0 2A    beq $1310
-12E6: C9 12    cmp #$12
-12E8: F0 3A    beq $1324
-12EA: C9 20    cmp #$20
-12EC: F0 50    beq $133e
-12EE: C9 0F    cmp #$0f
-12F0: D0 6F    bne $1361
-12F2: A9 80    lda #$80
-12F4: 85 1D    sta $1d
-12F6: D0 69    bne $1361
-12F8: A5 3B    lda $3b
-12FA: D0 65    bne $1361
-12FC: A9 07    lda #$07
-12FE: 85 3A    sta $3a
-1300: A9 FF    lda #$ff
-1302: 85 4B    sta $4b
-1304: 85 49    sta $49
-1306: A9 F1    lda #$f1
-1308: 85 4A    sta $4a
-130A: A9 F9    lda #$f9
-130C: 85 48    sta $48
-130E: D0 51    bne $1361
-1310: A9 17    lda #$17
-1312: 85 3A    sta $3a
-1314: A9 FF    lda #$ff
-1316: 85 4B    sta $4b
-1318: A9 EF    lda #$ef
-131A: 85 4A    sta $4a
-131C: A9 00    lda #$00
-131E: 85 49    sta $49
-1320: 85 48    sta $48
-1322: F0 3D    beq $1361
-1324: A5 3B    lda $3b
-1326: D0 39    bne $1361
-1328: A9 27    lda #$27
-132A: 85 3A    sta $3a
-132C: A9 FF    lda #$ff
-132E: 85 4B    sta $4b
-1330: A9 F1    lda #$f1
-1332: 85 4A    sta $4a
-1334: A9 00    lda #$00
-1336: 85 49    sta $49
-1338: A9 07    lda #$07
-133A: 85 48    sta $48
-133C: D0 23    bne $1361
-133E: A5 4E    lda $4e
-1340: C9 CD    cmp #$cd
-1342: F0 1D    beq $1361
-1344: A9 B5    lda #$b5
-1346: 8D 0D 90 sta $900d
-1349: A5 3A    lda $3a
-134B: 09 08    ora #$08
-134D: 85 3A    sta $3a
-134F: A9 00    lda #$00
-1351: 85 3B    sta $3b
-1353: C6 2C    dec $2c
-1355: D0 0A    bne $1361
-1357: A0 00    ldy #$00
-1359: 91 4E    sta ($4e), y
-135B: C6 4E    dec $4e
-135D: A5 2D    lda $2d
-135F: 85 2C    sta $2c
-1361: 60       rts
+
+
+-- subroutine: 
+12C7: A5 3A    lda $3a                  -- A = 37
+12C9: 29 37    and #$37                 -- 37
+12CB: 85 3A    sta $3a                  -- $3a = A
+12CD: A9 00    lda #$00                 -- A = 00
+12CF: 8D 0D 90 sta $900d                -- noise 
+12D2: A5 5E    lda $5e                  -- $5e = A
+12D4: F0 03    beq $12d9                -- 12d9
+12D6: 4C 70 19 jmp $1970                -- 
+12D9: 20 1E EB jsr $eb1e                -- read from keyboard
+-- keyboard: 09-W, 11-A, 12-D, 20-space, explode-Enter at C5, CB
+12DC: A5 C5    lda $c5                  -- load last read character 
+12DE: C9 11    cmp #$11                 -- key A
+12E0: F0 16    beq $12f8                -- move left
+12E2: C9 09    cmp #$09                 -- key W 
+12E4: F0 2A    beq $1310                -- put lander straight
+12E6: C9 12    cmp #$12                 -- key D
+12E8: F0 3A    beq $1324                -- move right 
+12EA: C9 20    cmp #$20                 -- key Space 
+12EC: F0 50    beq $133e                -- move up
+12EE: C9 0F    cmp #$0f                 -- key Enter
+12F0: D0 6F    bne $1361                -- lander explode 
+-- set lander explosion flag
+12F2: A9 80    lda #$80                 -- A = 80
+12F4: 85 1D    sta $1d                  -- 1d = 80 > lander exploded  
+12F6: D0 69    bne $1361                -- return
+-- A: move left
+12F8: A5 3B    lda $3b                  -- if not moving
+12FA: D0 65    bne $1361                -- return 
+12FC: A9 07    lda #$07                 -- 07 <-> lander left
+12FE: 85 3A    sta $3a                  -- lander orientation left
+1300: A9 FF    lda #$ff                 -- A = FF 
+1302: 85 4B    sta $4b                  -- $4b = FF
+1304: 85 49    sta $49                  -- 
+1306: A9 F1    lda #$f1                 -- A = F1 
+1308: 85 4A    sta $4a                  -- 
+130A: A9 F9    lda #$f9                 -- A = F9
+130C: 85 48    sta $48                  -- 
+130E: D0 51    bne $1361                -- 
+--
+-- W: put lander straight
+1310: A9 17    lda #$17                 -- 17 <-> lander points upward
+1312: 85 3A    sta $3a                  -- lander orientation straight
+1314: A9 FF    lda #$ff                 -- 
+1316: 85 4B    sta $4b                  -- $4b = FF
+1318: A9 EF    lda #$ef                 -- 
+131A: 85 4A    sta $4a                  -- 
+131C: A9 00    lda #$00                 -- 
+131E: 85 49    sta $49                  -- 
+1320: 85 48    sta $48                  -- 
+1322: F0 3D    beq $1361                -- 
+-- D: move right
+1324: A5 3B    lda $3b                  -- 3b <-> 1: on the loading dock, or orbital docking pad, 0: detached
+1326: D0 39    bne $1361                -- 
+1328: A9 27    lda #$27                 -- 
+132A: 85 3A    sta $3a                  -- lander orientation right
+132C: A9 FF    lda #$ff                 -- 
+132E: 85 4B    sta $4b                  -- $4b = FF
+1330: A9 F1    lda #$f1                 -- 
+1332: 85 4A    sta $4a                  -- $4a = 
+1334: A9 00    lda #$00                 -- 
+1336: 85 49    sta $49                  -- 
+1338: A9 07    lda #$07                 -- 
+133A: 85 48    sta $48                  -- 
+133C: D0 23    bne $1361                -- 
+-- move up, use fuel 
+133E: A5 4E    lda $4e                  -- 4e|4f fuel 
+1340: C9 CD    cmp #$cd                 -- if fuel burned out
+1342: F0 1D    beq $1361                -- straight up return 
+1344: A9 B5    lda #$b5                 -- b5: noise sound
+1346: 8D 0D 90 sta $900d                -- play noise when fuel up
+1349: A5 3A    lda $3a                  -- load current lander orientation
+134B: 09 08    ora #$08                 -- or 08 to get fueled up orientation
+134D: 85 3A    sta $3a                  -- store back to 3a
+134F: A9 00    lda #$00                 -- A = 00
+1351: 85 3B    sta $3b                  -- if using fuel, the lander is not in a "safe" mode, i.e, lander is moving
+1353: C6 2C    dec $2c                  -- current fuel in this slot
+1355: D0 0A    bne $1361                -- return 
+1357: A0 00    ldy #$00                 -- Y = 0
+1359: 91 4E    sta ($4e), y             -- decrease fuel line 
+135B: C6 4E    dec $4e                  -- 
+135D: A5 2D    lda $2d                  -- maximum fuel per slot
+135F: 85 2C    sta $2c                  -- reload maximum fuel for this slot
+1361: 60       rts                      -- return 
+
+
+-- 
 1362: AD 0D 90 lda $900d
 1365: F0 1A    beq $1381
 1367: 18       clc
@@ -449,10 +477,10 @@ F8 fuel line
 1370: 65 45    adc $45
 1372: 85 45    sta $45
 1374: 18       clc
-1375: A5 4A    lda $4a
+1375: A5 4A    lda $4a          --- 4a ???
 1377: 65 46    adc $46
 1379: 85 46    sta $46
-137B: A5 4B    lda $4b
+137B: A5 4B    lda $4b          --- 4b ???
 137D: 65 47    adc $47
 137F: 85 47    sta $47
 1381: A5 3B    lda $3b
@@ -589,26 +617,33 @@ F8 fuel line
 146D: A0 04    ldy #$04
 146F: A1 30    lda ($30, x)         -- read lander position
 1471: F0 23    beq $1496
-1473: C9 E3    cmp #$e3             -- E3: leveled ground
+1473: C9 E3    cmp #$e3             -- E3: safe landing groud
 1475: D0 07    bne $147e
 1477: 98       tya
 1478: 05 1D    ora $1d
+
+
 147A: 85 1D    sta $1d
 147C: D0 12    bne $1490
-147E: C9 0C    cmp #$0c             -- check if it is 0C <-> colonist
-1480: D0 06    bne $1488
-1482: 05 1D    ora $1d
-1484: 85 1D    sta $1d
-1486: D0 0E    bne $1496
-1488: C9 11    cmp #$11
+147E: C9 0C    cmp #$0c                 -- lander collided with 0C <-> colonist
+1480: D0 06    bne $1488                --
+1482: 05 1D    ora $1d                  --
+1484: 85 1D    sta $1d                  --
+1486: D0 0E    bne $1496                -- 
+
+-- lander returns to the orbital docking pad
+1488: C9 11    cmp #$11                 -- lander colllided with 11 <-> orbital docking pad
 148A: D0 04    bne $1490
 148C: A9 0F    lda #$0f
 148E: 85 1D    sta $1d
+
+-- 
+-- 
 1490: A9 80    lda #$80
 1492: 05 1D    ora $1d
 1494: 85 1D    sta $1d
-1496: 98       tya
-1497: 81 30    sta ($30, x)        -- set lander position
+1496: 98       tya                      
+1497: 81 30    sta ($30, x)             -- set lander position
 1499: 88       dey
 149A: CA       dex
 149B: CA       dex
@@ -771,11 +806,11 @@ F8 fuel line
 15C8: A0 16    ldy #$16
 
 15CA: 20 BB 16 jsr $16bb
-15CD: A9 E3    lda #$e3                 --  E3: leveled ground
+15CD: A9 E3    lda #$e3                 --  E3: safe landing ground
 15CF: 91 14    sta ($14), y             --  
 15D1: A0 01    ldy #$01                 --
 15D3: 20 BB 16 jsr $16bb                --
-15D6: A9 E3    lda #$e3                 --  E3: leveled ground
+15D6: A9 E3    lda #$e3                 --  E3: safe landing ground
 15D8: 91 14    sta ($14), y             --
 15DA: A0 EB    ldy #$eb                 --
 15DC: 20 BB 16 jsr $16bb
@@ -1126,9 +1161,9 @@ Unknown ???????
 // Copy 1ce5 area and 1cf5 area to 30 and 40 area
 17DB: A2 0F    ldx #$0f                 
 17DD: BD E5 1C lda $1ce5, x                     -- load screen area 1cf4 into a, first time is 1d
-17E0: 95 30    sta $30, x
+17E0: 95 30    sta $30, x                       -- 
 17E2: BD F5 1C lda $1cf5, x
-17E5: 95 40    sta $40, x
+17E5: 95 40    sta $40, x                       -- 
 17E7: CA       dex
 17E8: 10 F3    bpl $17dd
 
@@ -1144,12 +1179,14 @@ Unknown ???????
 17F6: 85 2C    sta $2c
 17F8: 4C 83 15 jmp $1583		-- generate the map, put up colonists
 
+
+-- subroutine: switch which colonist hands up
 17FB: A2 04    ldx #$04
 17FD: A0 02    ldy #$02
 17FF: B9 18 00 lda $0018, y
 1802: D0 0A    bne $180e
 1804: A9 0B    lda #$0b		-- colonist character set with hands down
-1806: C4 1F    cpy $1f
+1806: C4 1F    cpy $1f          -- 1F: which colonist puts his hands up
 1808: D0 02    bne $180c
 180A: A9 0C    lda #$0c    	-- colonist character set with hands up
 180C: 81 50    sta ($50, x)	-- put 2 hands-down colonists, 1 hands-up colonist on the screen
@@ -1232,7 +1269,6 @@ Unknown ???????
 1893: 60       rts
 
 -- subroutine to play sounds
-
 1894: A4 68    ldy $68
 1896: F0 58    beq $18f0
 1898: 88       dey
@@ -1291,8 +1327,8 @@ Unknown ???????
 18FF: 60       rts
 
 
--- subroutine:
-1900: A5 4D    lda $4d
+-- subroutine: move orbital docking pad
+1900: A5 4D    lda $4d                  
 1902: 29 01    and #$01
 1904: D0 55    bne $195b
 1906: A5 3E    lda $3e
@@ -1314,22 +1350,22 @@ Unknown ???????
 1926: A2 1F    ldx #$1f
 1928: BD 90 1C lda $1c90, x		-- load left  orbital docking pad 
 192B: 9D 68 1C sta $1c68, x		-- to image shifting buffer 1c68
-192E: CA       dex
+192E: CA       dex                      -- 
 192F: 10 F7    bpl $1928
 1931: A0 04    ldy #$04
-1933: 98       tya
-1934: 18       clc
-1935: 65 3E    adc $3e
+1933: 98       tya                      -- Y = A
+1934: 18       clc                      -- 
+1935: 65 3E    adc $3e                  -- 
 1937: C9 16    cmp #$16
 1939: B0 05    bcs $1940
-193B: B9 B0 1C lda $1cb0, y	    -- 1cb0 
-193E: 91 3E    sta ($3e), y
-1940: 88       dey
-1941: 10 F0    bpl $1933
+193B: B9 B0 1C lda $1cb0, y	        -- 1cb0 
+193E: 91 3E    sta ($3e), y             -- 3e
+1940: 88       dey                      -- Y --
+1941: 10 F0    bpl $1933                
 1943: E6 4C    inc $4c
 1945: 4C 5B 19 jmp $195b
 1948: A2 07    ldx #$07
-194A: 5E 68 1C lsr $1c68, x    -- orbital docking pad move right
+194A: 5E 68 1C lsr $1c68, x             -- orbital docking pad move right
 194D: 7E 70 1C ror $1c70, x
 1950: 7E 78 1C ror $1c78, x
 1953: 7E 80 1C ror $1c80, x
@@ -1349,33 +1385,34 @@ Unknown ???????
 1966: B0 04    bcs $196c                --
 1968: A9 00    lda #$00                 -- A = 0
 196A: 91 3E    sta ($3e), y             -- A = 
-196C: 88       dey
+196C: 88       dey                      -- Y -- 
 196D: 10 F1    bpl $1960
 196F: 60       rts
 
 
+-- 
+1970: 20 1E EB jsr $eb1e                -- read a character from keyboard
+1973: A5 C5    lda $c5                  -- A = $c5 = 
+1975: C9 40    cmp #$40                 -- if no character is pressed
+1977: F0 07    beq $1980                -- 1980
+1979: A9 00    lda #$00                 -- A = 00
+197B: 85 5E    sta $5e                  -- 
+197D: 4C 4B 10 jmp $104b                -- 
 
-1970: 20 1E EB jsr $eb1e
-1973: A5 C5    lda $c5
-1975: C9 40    cmp #$40
-1977: F0 07    beq $1980
-1979: A9 00    lda #$00
-197B: 85 5E    sta $5e
-197D: 4C 4B 10 jmp $104b
-1980: A5 6D    lda $6d
-1982: D0 12    bne $1996
-1984: E6 6E    inc $6e
-1986: A6 6E    ldx $6e
-1988: BD 20 1D lda $1d20, x
-198B: 85 6D    sta $6d
-198D: E8       inx
-198E: BD 20 1D lda $1d20, x
-1991: 86 6E    stx $6e
-1993: 4C DE 12 jmp $12de
-1996: C6 6D    dec $6d
-1998: A6 6E    ldx $6e
-199A: BD 20 1D lda $1d20, x
-199D: 4C DE 12 jmp $12de
+1980: A5 6D    lda $6d                  -- 
+1982: D0 12    bne $1996                -- not equal, to 1996
+1984: E6 6E    inc $6e                  -- 
+1986: A6 6E    ldx $6e                  -- 
+1988: BD 20 1D lda $1d20, x             -- 
+198B: 85 6D    sta $6d                  -- 
+198D: E8       inx                      -- 
+198E: BD 20 1D lda $1d20, x             -- 
+1991: 86 6E    stx $6e                  -- 
+1993: 4C DE 12 jmp $12de                -- 
+1996: C6 6D    dec $6d                  -- 
+1998: A6 6E    ldx $6e                  -- 
+199A: BD 20 1D lda $1d20, x             -- 
+199D: 4C DE 12 jmp $12de                -- 
 
 
 
@@ -1898,7 +1935,7 @@ FF    sta ($ff, x)
 1CAF: 00       brk
 
 
-1CB0: 0D 0E 11 ora $110e
+1CB0: 0D 0E 11 ora $110e        
 1CB3: 0F 10 00 slo $0010
 1CB6: 00       brk
 1CB7: 00       brk
@@ -1973,7 +2010,7 @@ FF    sta ($ff, x)
 1D18: 92       kil
 1D19: 85 00    sta $00
 1D1B: 00       brk
-1D1C: 00       brk
+1D1C: 00       brk      -- game score
 1D1D: 00       brk      -- first character of the user name
 1D1E: 00       brk      -- second character of the user name
 1D1F: 00       brk      -- third charactter of the user name

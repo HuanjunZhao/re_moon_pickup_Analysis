@@ -369,43 +369,47 @@ F8 fuel line
 12C4: 4C 74 10 jmp $1074
 
 
--- subroutine ship logic, calculate feul and update fuel line
-12C7: A5 3A    lda $3a
-12C9: 29 37    and #$37
-12CB: 85 3A    sta $3a
-12CD: A9 00    lda #$00
-12CF: 8D 0D 90 sta $900d
-12D2: A5 5E    lda $5e
-12D4: F0 03    beq $12d9
-12D6: 4C 70 19 jmp $1970
-12D9: 20 1E EB jsr $eb1e
-12DC: A5 C5    lda $c5                  
-12DE: C9 11    cmp #$11         - keyboard A
-12E0: F0 16    beq $12f8
-12E2: C9 09    cmp #$09         - keyboard W
-12E4: F0 2A    beq $1310
-12E6: C9 12    cmp #$12         - keyboard D
-12E8: F0 3A    beq $1324
-12EA: C9 20    cmp #$20         - keyboard SPACE
-12EC: F0 50    beq $133e
-12EE: C9 0F    cmp #$0f         - keyboard enter
-12F0: D0 6F    bne $1361
-12F2: A9 80    lda #$80         -- if do nothing 
-12F4: 85 1D    sta $1d
-12F6: D0 69    bne $1361
-12F8: A5 3B    lda $3b
-12FA: D0 65    bne $1361
-12FC: A9 07    lda #$07
-12FE: 85 3A    sta $3a
-1300: A9 FF    lda #$ff
-1302: 85 4B    sta $4b
+-- subroutine ship control logic, calculate feul and update fuel line
+12C7: A5 3A    lda $3a                  -- 
+12C9: 29 37    and #$37                 -- 37
+12CB: 85 3A    sta $3a                  -- A = $3a
+12CD: A9 00    lda #$00                 -- A = 00
+12CF: 8D 0D 90 sta $900d                -- noise 
+12D2: A5 5E    lda $5e                  -- $5e = A
+12D4: F0 03    beq $12d9                -- 12d9
+12D6: 4C 70 19 jmp $1970                -- 
+12D9: 20 1E EB jsr $eb1e                -- read from keyboard
+-- keyboard: 09-W, 11-A, 12-D, 20-space, explode-Enter at C5, CB
+12DC: A5 C5    lda $c5                  -- load last read character 
+12DE: C9 11    cmp #$11                 -- key A
+12E0: F0 16    beq $12f8                -- move left
+12E2: C9 09    cmp #$09                 -- key W 
+12E4: F0 2A    beq $1310                -- put lander straight
+12E6: C9 12    cmp #$12                 -- key D
+12E8: F0 3A    beq $1324                -- move right
+12EA: C9 20    cmp #$20                 -- key Space 
+12EC: F0 50    beq $133e                -- move up
+12EE: C9 0F    cmp #$0f                 -- key Enter
+12F0: D0 6F    bne $1361                -- lander explode 
+-- set lander explosion flag
+12F2: A9 80    lda #$80                 -- A = 80
+12F4: 85 1D    sta $1d                  -- 1d = 80 > lander exploded
+12F6: D0 69    bne $1361                -- return
+-- A: move left
+12F8: A5 3B    lda $3b                  -- if not moving
+12FA: D0 65    bne $1361                -- return 
+12FC: A9 07    lda #$07                 -- 07 <-> lander left
+12FE: 85 3A    sta $3a                  -- update lander orientation
+1300: A9 FF    lda #$ff                 -- A = FF 
+1302: 85 4B    sta $4b                  -- 
 1304: 85 49    sta $49
 1306: A9 F1    lda #$f1
 1308: 85 4A    sta $4a
 130A: A9 F9    lda #$f9
 130C: 85 48    sta $48
 130E: D0 51    bne $1361
-1310: A9 17    lda #$17
+-- W: put lander straight
+1310: A9 17    lda #$17                 -- 17 <-> lander points upward
 1312: 85 3A    sta $3a
 1314: A9 FF    lda #$ff
 1316: 85 4B    sta $4b
@@ -415,9 +419,10 @@ F8 fuel line
 131E: 85 49    sta $49
 1320: 85 48    sta $48
 1322: F0 3D    beq $1361
-1324: A5 3B    lda $3b
+-- D: move right
+1324: A5 3B    lda $3b                  -- 3b <-> 1: on the loading dock, or orbital docking pad, 0: detached
 1326: D0 39    bne $1361
-1328: A9 27    lda #$27
+1328: A9 27    lda #$27                 -- lander towards right
 132A: 85 3A    sta $3a
 132C: A9 FF    lda #$ff
 132E: 85 4B    sta $4b
@@ -428,27 +433,25 @@ F8 fuel line
 1338: A9 07    lda #$07
 133A: 85 48    sta $48
 133C: D0 23    bne $1361
-133E: A5 4E    lda $4e
-1340: C9 CD    cmp #$cd
-1342: F0 1D    beq $1361
-1344: A9 B5    lda #$b5
-1346: 8D 0D 90 sta $900d
-1349: A5 3A    lda $3a
-134B: 09 08    ora #$08
-134D: 85 3A    sta $3a
-134F: A9 00    lda #$00
-1351: 85 3B    sta $3b
-1353: C6 2C    dec $2c
-1355: D0 0A    bne $1361
-
-
-1357: A0 00    ldy #$00
-1359: 91 4E    sta ($4e), y   -- change fuel pointer, when pointer to 1FCE, no fuel
-135B: C6 4E    dec $4e          
-135D: A5 2D    lda $2d
-135F: 85 2C    sta $2c
-1361: 60       rts
-
+-- move up, use fuel 
+133E: A5 4E    lda $4e                  -- 4e|4f fuel 
+1340: C9 CD    cmp #$cd                 -- if fuel burned out
+1342: F0 1D    beq $1361                -- straight up return 
+1344: A9 B5    lda #$b5                 -- b5: noise sound
+1346: 8D 0D 90 sta $900d                -- play noise when fuel up
+1349: A5 3A    lda $3a                  -- load current lander orientation
+134B: 09 08    ora #$08                 -- or 08 to get fueled up orientation
+134D: 85 3A    sta $3a                  -- store back to 3a
+134F: A9 00    lda #$00                 -- A = 00
+1351: 85 3B    sta $3b                  -- if using fuel, the lander is not in a "safe" mode, i.e, lander is moving
+1353: C6 2C    dec $2c                  -- current fuel in this slot
+1355: D0 0A    bne $1361                -- return 
+1357: A0 00    ldy #$00                 -- Y = 0
+1359: 91 4E    sta ($4e), y             -- decrease fuel line 
+135B: C6 4E    dec $4e                  -- when pointer to 1FCE, no fuel
+135D: A5 2D    lda $2d                  -- maximum fuel per slot
+135F: 85 2C    sta $2c                  -- reload maximum fuel for this slot
+1361: 60       rts                      -- return
 
 
 1362: AD 0D 90 lda $900d

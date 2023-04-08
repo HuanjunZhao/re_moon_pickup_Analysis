@@ -93,13 +93,14 @@ F8 fuel line
 1083: 20 DD 13 jsr $13dd		--  game logic?? TODO
 1086: 20 00 19 jsr $1900        -- orbital docking pad moving calculation
 1089: 20 FB 17 jsr $17fb	-- colonist hands up or down calculation
-108C: 20 C7 12 jsr $12c7        -- ??
-108F: A5 1D    lda $1d
+108C: 20 C7 12 jsr $12c7        -- wait for zhijie part
+108F: A5 1D    lda $1d          -- load ship status and ready to handle event
 1091: F0 03    beq $1096
-1093: 4C BD 11 jmp $11bd
-1096: 20 62 13 jsr $1362
+1093: 4C BD 11 jmp $11bd        -- game logic
+1096: 20 62 13 jsr $1362        -- update game data with 40 area
 1099: 4C 7A 10 jmp $107a
-109C: A9 1E    lda #$1e
+
+109C: A9 1E    lda #$1e         -- 1e8a -> GAME OVER!
 109E: 85 15    sta $15
 10A0: A9 8A    lda #$8a
 10A2: 85 14    sta $14
@@ -218,7 +219,7 @@ F8 fuel line
 1193: C6 1B    dec $1b
 1195: 30 03    bmi $119a
 1197: 4C 77 10 jmp $1077
-119A: 4C 9C 10 jmp $109c
+119A: 4C 9C 10 jmp $109c                -- game end??
 119D: A4 1F    ldy $1f
 119F: A9 02    lda #$02
 11A1: 99 18 00 sta $0018, y
@@ -242,7 +243,7 @@ F8 fuel line
 11C3: F0 D8    beq $119d
 11C5: C9 0C    cmp #$0c                 -- check if it is 0C <-> colonist
 11C7: F0 D4    beq $119d                
-11C9: C9 86    cmp #$86
+11C9: C9 86    cmp #$86 -- 04-> 84 -> 86
 11CB: D0 97    bne $1164
 11CD: A5 3A    lda $3a
 11CF: 29 10    and #$10

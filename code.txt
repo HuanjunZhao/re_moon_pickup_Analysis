@@ -4,12 +4,13 @@ b0-b9 is special char set for 0-9
 Tested by b@1e00= x (x is map address)
 05-14 is game's special char set
 1b, 1c"
+1f which colonist hands is up
 2d
 2E for storing game score
 F8 fuel line
-30 + 31 = position of the invisible part of the lander
-32 + 33 lander ship pixel pos
-
+32 + 33 = position of the invisible part of the lander
+30 + 31 lander ship pixel pos
+4e+4f = fuel remaining
 3e + 3f = position of the left part of the orbital ship
 11 12 13 low midium high Frequency
 -- BASIC Stub
@@ -90,9 +91,9 @@ F8 fuel line
 107D: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
 1080: 20 A9 14 jsr $14a9		-- TODO
 1083: 20 DD 13 jsr $13dd		--  game logic?? TODO
-1086: 20 00 19 jsr $1900		
-1089: 20 FB 17 jsr $17fb	    
-108C: 20 C7 12 jsr $12c7
+1086: 20 00 19 jsr $1900        -- orbital docking pad moving calculation
+1089: 20 FB 17 jsr $17fb	-- colonist hands up or down calculation
+108C: 20 C7 12 jsr $12c7        -- ??
 108F: A5 1D    lda $1d
 1091: F0 03    beq $1096
 1093: 4C BD 11 jmp $11bd
@@ -233,7 +234,9 @@ F8 fuel line
 11B6: A9 00    lda #$00
 11B8: 85 1D    sta $1d
 11BA: 4C 96 10 jmp $1096
-11BD: C9 8F    cmp #$8f
+
+-- if ship dead?
+11BD: C9 8F    cmp #$8f                 -- if the ship return the orbital docking pad
 11BF: F0 76    beq $1237
 11C1: C9 8C    cmp #$8c
 11C3: F0 D8    beq $119d
@@ -283,9 +286,9 @@ F8 fuel line
 121C: 99 14 00 sta $0014, y
 121F: 20 A9 14 jsr $14a9
 1222: 20 DD 13 jsr $13dd
-1225: A9 E3    lda #$e3             -- E3: leveled ground
+1225: A9 E3    lda #$e3             -- E3: safe landing ground
 1227: A2 00    ldx #$00
-1229: 86 1D    stx $1d
+1229: 86 1D    stx $1d                  -- set 1d to 00 ship pick up a colonist finisheds
 122B: 81 14    sta ($14, x)
 122D: A2 02    ldx #$02
 122F: 81 14    sta ($14, x)
@@ -363,6 +366,9 @@ F8 fuel line
 12C0: C9 A7    cmp #$a7
 12C2: 90 E8    bcc $12ac
 12C4: 4C 74 10 jmp $1074
+
+
+-- subroutine ship logic, calculate feul and update fuel line
 12C7: A5 3A    lda $3a
 12C9: 29 37    and #$37
 12CB: 85 3A    sta $3a
@@ -372,18 +378,18 @@ F8 fuel line
 12D4: F0 03    beq $12d9
 12D6: 4C 70 19 jmp $1970
 12D9: 20 1E EB jsr $eb1e
-12DC: A5 C5    lda $c5
-12DE: C9 11    cmp #$11
+12DC: A5 C5    lda $c5                  
+12DE: C9 11    cmp #$11         - keyboard A
 12E0: F0 16    beq $12f8
-12E2: C9 09    cmp #$09
+12E2: C9 09    cmp #$09         - keyboard W
 12E4: F0 2A    beq $1310
-12E6: C9 12    cmp #$12
+12E6: C9 12    cmp #$12         - keyboard D
 12E8: F0 3A    beq $1324
-12EA: C9 20    cmp #$20
+12EA: C9 20    cmp #$20         - keyboard SPACE
 12EC: F0 50    beq $133e
-12EE: C9 0F    cmp #$0f
+12EE: C9 0F    cmp #$0f         - keyboard enter
 12F0: D0 6F    bne $1361
-12F2: A9 80    lda #$80
+12F2: A9 80    lda #$80         -- if do nothing 
 12F4: 85 1D    sta $1d
 12F6: D0 69    bne $1361
 12F8: A5 3B    lda $3b
@@ -433,12 +439,17 @@ F8 fuel line
 1351: 85 3B    sta $3b
 1353: C6 2C    dec $2c
 1355: D0 0A    bne $1361
+
+
 1357: A0 00    ldy #$00
-1359: 91 4E    sta ($4e), y
-135B: C6 4E    dec $4e
+1359: 91 4E    sta ($4e), y   -- change fuel pointer, when pointer to 1FCE, no fuel
+135B: C6 4E    dec $4e          
 135D: A5 2D    lda $2d
 135F: 85 2C    sta $2c
 1361: 60       rts
+
+
+
 1362: AD 0D 90 lda $900d
 1365: F0 1A    beq $1381
 1367: 18       clc
@@ -589,24 +600,35 @@ F8 fuel line
 146D: A0 04    ldy #$04
 146F: A1 30    lda ($30, x)         -- read lander position
 1471: F0 23    beq $1496
-1473: C9 E3    cmp #$e3             -- E3: leveled ground
+1473: C9 E3    cmp #$e3             -- copmare the 8x8 pixel with e3 -> e3 is safe landing ground
 1475: D0 07    bne $147e
-1477: 98       tya
+1477: 98       tya                  -- if it is safe landing ground -> 
 1478: 05 1D    ora $1d
-147A: 85 1D    sta $1d
-147C: D0 12    bne $1490
-147E: C9 0C    cmp #$0c             -- check if it is 0C <-> colonist
-1480: D0 06    bne $1488
+
+-- no event for ship
+147A: 85 1D    sta $1d              -- ship landed at ground -> set 04 into 1d
+147C: D0 12    bne $1490            -- if 1d is not 0 -> no event occured, goto 1490 else -> event occured
+
+-- event: hit colonist
+147E: C9 0C    cmp #$0c             -- check if it is 0C <-> colonist, the ship hit the colonist
+1480: D0 06    bne $1488            -- if not hit the colonist, goto 1488, else handle the event ship hit the colonist
 1482: 05 1D    ora $1d
-1484: 85 1D    sta $1d
+1484: 85 1D    sta $1d              -- if the ship hit the colonist -> set 0c into 1d
 1486: D0 0E    bne $1496
+
+-- event: return to orbital docking pad
 1488: C9 11    cmp #$11
 148A: D0 04    bne $1490
 148C: A9 0F    lda #$0f
 148E: 85 1D    sta $1d
+
+
+-- event1: colonist picked up
+-- event2: ship dead
+-- protential 1d value: 04, 00
 1490: A9 80    lda #$80
-1492: 05 1D    ora $1d
-1494: 85 1D    sta $1d
+1492: 05 1D    ora $1d                  -- protential 1d value: 84, 80 -> 80 ship dead, 84 colonist picked up
+1494: 85 1D    sta $1d                  -- set 1d value into 1d
 1496: 98       tya
 1497: 81 30    sta ($30, x)        -- set lander position
 1499: 88       dey
@@ -771,11 +793,11 @@ F8 fuel line
 15C8: A0 16    ldy #$16
 
 15CA: 20 BB 16 jsr $16bb
-15CD: A9 E3    lda #$e3                 --  E3: leveled ground
+15CD: A9 E3    lda #$e3                 --  E3: safe landing ground
 15CF: 91 14    sta ($14), y             --  
 15D1: A0 01    ldy #$01                 --
 15D3: 20 BB 16 jsr $16bb                --
-15D6: A9 E3    lda #$e3                 --  E3: leveled ground
+15D6: A9 E3    lda #$e3                 --  E3: safe landing ground
 15D8: 91 14    sta ($14), y             --
 15DA: A0 EB    ldy #$eb                 --
 15DC: 20 BB 16 jsr $16bb
@@ -1626,7 +1648,7 @@ Unknown ???????
 1BFE: D0 00    bne $1c00
 
 -- special characters set memory area
--- 00
+-- 00  reserved for ship - currently not used
 1C00: 00       brk
 1C01: 00       brk
 1C02: 00       brk
@@ -1635,7 +1657,9 @@ Unknown ???????
 1C05: 00       brk
 1C06: 00       brk
 1C07: 00       brk
--- 01 -- current lander image?
+
+-- 01-04-> when ship is moving, it can only oucupy 4 8*8 pixels  0407 6pm finding
+-- 01 -- shifting ship left top part
 1C08: 00       brk
 1C09: 00       brk
 1C0A: 00       brk
@@ -1644,7 +1668,8 @@ Unknown ???????
 1C0D: 00       brk
 1C0E: 00       brk
 1C0F: 00       brk
--- 02
+
+-- 02 -- shifting ship left bottom part
 1C10: 00       brk
 1C11: 00       brk
 1C12: 00       brk
@@ -1653,7 +1678,8 @@ Unknown ???????
 1C15: 00       brk
 1C16: 00       brk
 1C17: 00       brk
--- 03
+
+-- 03 -- shifting ship right top part
 1C18: 00       brk
 1C19: 00       brk
 1C1A: 00       brk
@@ -1662,7 +1688,8 @@ Unknown ???????
 1C1D: 00       brk
 1C1E: 00       brk
 1C1F: 00       brk
--- 04
+
+-- 04 -- shifting ship right bottom part
 1C20: 00       brk
 1C21: 00       brk
 1C22: 00       brk

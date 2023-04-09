@@ -799,159 +799,171 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1594: 85 16    sta $16      -- $16 = A = 0
 
 -- small loop: find a ramdom position to start the map (pos has to be left of the screen)
-1596: A0 16    ldy #$16     -- Y = 16            <-------------------------------------------
-1598: 20 BB 16 jsr $16bb                                                                    |
-                        -- subroutine: A = Y; Y = 0x0 if Y positive, Y = 0xff otherwise;    |
-                        -- $14 += original Y                                                |
-                        -- $15 += 0x0 if Y is positive, other wise 0xff                     |
-159B: CA       dex          -- X -= 1                                                       |
-159C: 10 F8    bpl $1596    -- branch on plus, when x from 00 to ff, exit loop --------------
+1596: A0 16    ldy #$16     	-- Y = 16            <-------------------------------------------
+1598: 20 BB 16 jsr $16bb    	                                                                |
+                        	-- subroutine: A = Y; Y = 0x0 if Y positive, Y = 0xff otherwise;    |
+                        	-- $14 += original Y                                                |
+                        	-- $15 += 0x0 if Y is positive, other wise 0xff                     |
+159B: CA       dex          	-- X -= 1                                                       |
+159C: 10 F8    bpl $1596    	-- branch on plus, when x from 00 to ff, exit loop --------------
 
 
-159E: A9 02    lda #$02     -- A = 0x02
-15A0: 85 17    sta $17      -- $17 = A = 0x02
-15A2: 20 48 17 jsr $1748    -- 
-15A5: A5 10    lda $10      
-15A7: 29 7F    and #$7f
-15A9: 85 1E    sta $1e
-15AB: A5 16    lda $16
-15AD: C9 03    cmp #$03
-15AF: F0 10    beq $15c1
-15B1: A5 17    lda $17
-15B3: F0 13    beq $15c8
-15B5: C9 01    cmp #$01
-15B7: D0 32    bne $15eb
-15B9: A5 1E    lda $1e
-15BB: 09 80    ora #$80
-15BD: 85 1E    sta $1e
-15BF: 30 2A    bmi $15eb
-15C1: A5 17    lda $17
-15C3: D0 26    bne $15eb
-15C5: 4C FB 17 jmp $17fb
-15C8: A0 16    ldy #$16
+159E: A9 02    lda #$02     	-- A = 0x02
+15A0: 85 17    sta $17      	-- $17 = A = 0x02
+15A2: 20 48 17 jsr $1748    	-- get some randomness
+15A5: A5 10    lda $10      	-- A = $10
+15A7: 29 7F    and #$7f     	-- A &= 0x7f, a can be no greater than 7f
+15A9: 85 1E    sta $1e      	-- $1e = A, store the random number for later use
+15AB: A5 16    lda $16      	-- load indicator     
+15AD: C9 03    cmp #$03    		-- if it is 3
+15AF: F0 10    beq $15c1    	-- branch to $15c1
+15B1: A5 17    lda $17      	--  load value in 17
+15B3: F0 13    beq $15c8 		-- if value in 17 is 3, branch to $15c8, add safe land
+15B5: C9 01    cmp #$01   		-- if the value is not 1
+15B7: D0 32    bne $15eb  		-- branch to $15eb
+-- if the value is 1
+15B9: A5 1E    lda $1e			-- load value in 1e
+15BB: 09 80    ora #$80			-- keep only the 10000000, which is the sign bit
+15BD: 85 1E    sta $1e			-- store the value in 1e
+15BF: 30 2A    bmi $15eb		-- if the value is negative, branch to $15eb
+-- if the value is positive
+15C1: A5 17    lda $17			-- load value in 17
+15C3: D0 26    bne $15eb		-- if the value is not 0, branch to $15eb
+15C5: 4C FB 17 jmp $17fb		-- branch to $17fb, set the colonists onto screen
+-- it is time for adding safe land onto screen!!
+15C8: A0 16    ldy #$16			-- Y = 16
+15CA: 20 BB 16 jsr $16bb        -- find map position based on given Y   
+15CD: A9 E3    lda #$e3			-- load E3, E3: safe landing ground
+15CF: 91 14    sta ($14), y		-- adding safe land part 1 to the mapS
+15D1: A0 01    ldy #$01			-- Y = 1
+15D3: 20 BB 16 jsr $16bb		-- goto 16bb, find the position based on given Y, in this case we will get next cell position(two safe land should connect together)
+15D6: A9 E3    lda #$e3			-- load E3, E3: safe landing ground
+15D8: 91 14    sta ($14), y     -- adding safe land part 1 to the mapS
+15DA: A0 EB    ldy #$eb         -- adding safe land part 1 to the mapS
+15DC: 20 BB 16 jsr $16bb		-- find position based on given Y, in this case we will get immediate right cell position
+--counter
+15DF: C6 17    dec $17			-- decrease value in 17: 02->01->00->FF
+15E1: 10 BF    bpl $15a2		-- if value in 17 is positive, branch to $15a2
+15E3: A9 02    lda #$02			-- reload $17 with 02
+15E5: 85 17    sta $17			-- reload $17 with 02
+15E7: E6 16    inc $16			-- $16 += 1, how many standing platform we generate
+15E9: D0 B7    bne $15a2		-- branch to $15a2
 
--- Subroutine:
-15CA: 20 BB 16 jsr $16bb
-15CD: A9 E3    lda #$e3                 --  E3: safe landing ground
-15CF: 91 14    sta ($14), y             --  
-15D1: A0 01    ldy #$01                 --
-15D3: 20 BB 16 jsr $16bb                --
-15D6: A9 E3    lda #$e3                 --  E3: safe landing ground
-15D8: 91 14    sta ($14), y             --
-15DA: A0 EB    ldy #$eb                 --
-15DC: 20 BB 16 jsr $16bb
-15DF: C6 17    dec $17
-15E1: 10 BF    bpl $15a2
-15E3: A9 02    lda #$02
-15E5: 85 17    sta $17
-15E7: E6 16    inc $16
-15E9: D0 B7    bne $15a2
-15EB: A5 15    lda $15
-15ED: C9 1E    cmp #$1e
-15EF: F0 0C    beq $15fd
-15F1: A5 14    lda $14
-15F3: C9 8C    cmp #$8c
-15F5: A5 1E    lda $1e
-15F7: 90 0E    bcc $1607
-15F9: 09 01    ora #$01
-15FB: D0 0A    bne $1607
-15FD: A5 14    lda $14
-15FF: C9 9A    cmp #$9a                         
-1601: A5 1E    lda $1e
-1603: B0 02    bcs $1607
-1605: 29 FE    and #$fe
-1607: 4A       lsr a
-1608: 85 1E    sta $1e
-160A: 90 12    bcc $161e
-160C: A9 CE    lda #$ce                     -- CE = uphill
-160E: A0 00    ldy #$00
-1610: 91 14    sta ($14), y
-1612: A0 EB    ldy #$eb
-1614: 20 BB 16 jsr $16bb
-1617: A5 1E    lda $1e
-1619: 4A       lsr a
-161A: 90 6F    bcc $168b
-161C: B0 15    bcs $1633
-161E: A0 16    ldy #$16
-1620: 20 BB 16 jsr $16bb
-1623: A9 CD    lda #$cd             -- CD = downhill
-1625: 91 14    sta ($14), y
-1627: A5 1E    lda $1e
-1629: 4A       lsr a
-162A: 90 3D    bcc $1669
-162C: A0 01    ldy #$01
-162E: 20 BB 16 jsr $16bb
-1631: F0 1D    beq $1650
-1633: 25 1C    and $1c
-1635: AA       tax
-1636: F0 18    beq $1650
-1638: A5 15    lda $15
-163A: C9 1F    cmp #$1f
-163C: F0 06    beq $1644
-163E: A5 14    lda $14
-1640: C9 B0    cmp #$b0
-1642: 90 0C    bcc $1650
-1644: A9 E5    lda #$e5
-1646: 91 14    sta ($14), y
-1648: A0 EA    ldy #$ea
-164A: 20 BB 16 jsr $16bb
-164D: CA       dex
-164E: D0 E6    bne $1636
-1650: A5 1E    lda $1e
-1652: 29 40    and #$40
-1654: F0 04    beq $165a
-1656: A9 E9    lda #$e9
-1658: D0 02    bne $165c
-165A: A9 CE    lda #$ce                 -- CE =  uphill
-165C: 91 14    sta ($14), y
-165E: 20 A9 16 jsr $16a9
-1661: A0 01    ldy #$01
-1663: 20 BB 16 jsr $16bb
-1666: 4C DF 15 jmp $15df
-1669: 25 1C    and $1c
-166B: AA       tax
-166C: F0 18    beq $1686
-166E: A5 15    lda $15
-1670: C9 1E    cmp #$1e
-1672: F0 06    beq $167a
-1674: A5 14    lda $14
-1676: C9 76    cmp #$76
-1678: B0 0C    bcs $1686
-167A: A0 16    ldy #$16
-167C: 20 BB 16 jsr $16bb
-167F: A9 E7    lda #$e7
-1681: 91 14    sta ($14), y
-1683: CA       dex
-1684: D0 E6    bne $166c
-1686: A0 01    ldy #$01
-1688: 20 BB 16 jsr $16bb
-168B: A0 16    ldy #$16
-168D: 20 BB 16 jsr $16bb
-1690: A5 1E    lda $1e
-1692: 29 40    and #$40
-1694: F0 04    beq $169a
-1696: A9 DF    lda #$df                 -- DF = the dock for colonist to stand on
-1698: D0 02    bne $169c                
-169A: A9 CD    lda #$cd                 -- CD = downhill
-169C: 91 14    sta ($14), y
-169E: 20 A9 16 jsr $16a9
-16A1: A0 17    ldy #$17
-16A3: 20 BB 16 jsr $16bb
-16A6: 4C DF 15 jmp $15df
-16A9: A0 EA    ldy #$ea
-16AB: 20 BB 16 jsr $16bb
-16AE: A5 16    lda $16
-16B0: 0A       asl a
-16B1: AA       tax
-16B2: A5 14    lda $14
-16B4: 95 50    sta $50, x
-16B6: A5 15    lda $15
-16B8: 95 51    sta $51, x
-16BA: 60       rts
+-- 15eb: deal and generate map position onto the screen
+15EB: A5 15    lda $15          -- load 15, 15 is 1e or 1f, means top part of the screen or bottom part of the screen
+15ED: C9 1E    cmp #$1e         -- if this is top part of the screen address: 1exx
+15EF: F0 0C    beq $15fd        -- deal with top part of screen solution
+15F1: A5 14    lda $14          -- if we not goto 15fd, $15 is 1f, means half part of the screen address: 1fxx
+15F3: C9 8C    cmp #$8c         -- compare the exact position with 8c, 1f8c is the lowest start map address we can have
+15F5: A5 1E    lda $1e          -- load 1e, the random number
+15F7: 90 0E    bcc $1607        -- if the random number is less than 8c, means it is suitable for generate the map, branch to $1607 
+15F9: 09 01    ora #$01         -- a=1 or a=0
+15FB: D0 0A    bne $1607        -- if value in 1e is less, goto 1607
 
 
+-- make $1e even number then divide two, the carry is for determine the map is uphill or downhill
+15FD: A5 14    lda $14          -- load 14 to A, 14 is left-est position of the screen
+15FF: C9 9A    cmp #$9a         -- make $1e even number            
+1601: A5 1E    lda $1e          -- A = 1e random number
+1603: B0 02    bcs $1607        -- if has carry, goto 1607
+1605: 29 FE    and #$fe         -- no carry, &11111110, make it even number
+1607: 4A       lsr a            -- shift right A, A = A >> 1, A = A / 2
+1608: 85 1E    sta $1e          -- store this random into 1e
+160A: 90 12    bcc $161e        -- if A has no carry, goto 161e, the carry is for determine the map is uphill or downhill
 
--- subroutine: update address 14 and 15 addr 14 = 14 + 0x16
+160C: A9 CE    lda #$ce			-- we do have carry, CE = map started with uphill
+160E: A0 00    ldy #$00			-- y = 0
+1610: 91 14    sta ($14), y		-- print the uphill onto the screen
+1612: A0 EB    ldy #$eb			-- load eb to y
+1614: 20 BB 16 jsr $16bb		-- find position based on given Y, in this case we will get immediate right cell position
+1617: A5 1E    lda $1e			-- load $1e, the random number
+1619: 4A       lsr a			-- a = $1e >> 1, a = $1e / 2
+161A: 90 6F    bcc $168b		-- if a has no carry, goto 168b
+161C: B0 15    bcs $1633		-- if a has carry, goto 1633
+161E: A0 16    ldy #$16			-- said, no carry, y = 16
+1620: 20 BB 16 jsr $16bb		-- find another position(16th), it has to be at the left of the screen
+1623: A9 CD    lda #$cd         -- (map started with downhill,) load downhill in A
+1625: 91 14    sta ($14), y		-- print the downhill onto the screen
+1627: A5 1E    lda $1e			-- load $1e, the random number
+1629: 4A       lsr a			-- a = $1e >> 1, a = $1e / 2
+162A: 90 3D    bcc $1669		-- if a has no carry, goto 1669
+162C: A0 01    ldy #$01			-- y = 1
+162E: 20 BB 16 jsr $16bb		-- goto 16bb, find the position based on given Y, in this case we will get next cell position
+1631: F0 1D    beq $1650		-- if a = 0, goto 1650 -> 16bb will give you 0
+
+1633: 25 1C    and $1c			-- && 11100
+1635: AA       tax				-- x = a
+1636: F0 18    beq $1650		-- if a = 0, goto 1650
+1638: A5 15    lda $15			-- load $15, 15 is 1e or 1f, means top part of the screen or bottom part of the screen
+163A: C9 1F    cmp #$1f			-- if this is bottom part of the screen address: 1fxx
+163C: F0 06    beq $1644		-- goto 1644
+163E: A5 14    lda $14			-- if we not goto 1644, $15 is 1e, means half part of the screen address: 1exx
+1640: C9 B0    cmp #$b0         -- if the map is start from 1eb0 
+1642: 90 0C    bcc $1650		-- if the starting address is lees than 1eb0, goto 1650
+1644: A9 E5    lda #$e5			-- loading a supporting stick(left) to A for smooth connection
+1646: 91 14    sta ($14), y		-- print the supporting stick onto the screen
+1648: A0 EA    ldy #$ea			-- load ea to y
+164A: 20 BB 16 jsr $16bb		-- find position based on given Y, in this case we will get immediate right cell position
+164D: CA       dex				-- x = x - 1
+164E: D0 E6    bne $1636		-- if x != 0, goto 1636
+1650: A5 1E    lda $1e			-- load $1e, the random number
+1652: 29 40    and #$40			-- && 1000000
+1654: F0 04    beq $165a		-- value in 1e < 0b1000000, goto 165a
+1656: A9 E9    lda #$e9			-- value in 1e >= 0b1000000, load e9, E9 is colonists standing triangle platform with facing down-right
+1658: D0 02    bne $165c		-- goto 165c
+165A: A9 CE    lda #$ce        	-- CE =  uphill, load uphill in A
+165C: 91 14    sta ($14), y		-- print the uphill onto the screen
+165E: 20 A9 16 jsr $16a9		-- goto 16a9 and finish the map generation
+1661: A0 01    ldy #$01			-- y = 1
+1663: 20 BB 16 jsr $16bb		-- goto 16bb, find the position based on given Y, in this case we will get next cell position
+1666: 4C DF 15 jmp $15df		-- $17 counter--
+
+1669: 25 1C    and $1c			-- && 11100
+166B: AA       tax				-- x = a
+166C: F0 18    beq $1686		-- if a = 0, goto 1686
+166E: A5 15    lda $15			-- load $15, 15 is 1e or 1f, means top part of the screen or bottom part of the screen
+1670: C9 1E    cmp #$1e			-- if this is top part of the screen address: 1exx
+1672: F0 06    beq $167a		-- goto 167a
+1674: A5 14    lda $14			-- if we not goto 167a, $15 is 1f, means half part of the screen address: 1fxx
+1676: C9 76    cmp #$76			-- if the map is start from 1f76
+1678: B0 0C    bcs $1686		-- if the starting address is greater than 1f76, goto 1686
+167A: A0 16    ldy #$16			-- y = 16
+167C: 20 BB 16 jsr $16bb		-- find another position(16th), it has to be at the left of the screen
+167F: A9 E7    lda #$e7			-- loading a supporting stick(right) to A for smooth connection
+1681: 91 14    sta ($14), y		-- print the supporting stick onto the screen
+1683: CA       dex				-- x = x - 1
+1684: D0 E6    bne $166c		-- if x != 0, goto 166c
+1686: A0 01    ldy #$01			-- y = 1
+1688: 20 BB 16 jsr $16bb		-- goto 16bb, find the position based on given Y, in this case we will get next cell position
+
+168B: A0 16    ldy #$16			-- y = 16
+168D: 20 BB 16 jsr $16bb		-- find another position(16th), it has to be at the left of the screen
+1690: A5 1E    lda $1e			-- load $1e, the random number
+1692: 29 40    and #$40			-- && 1000000
+1694: F0 04    beq $169a		-- value in 1e < 0b1000000, goto 169a
+1696: A9 DF    lda #$df         -- value in 1e >= 0b1000000, load df, DF is colonists standing triangle platform with facing down-left
+1698: D0 02    bne $169c     	-- goto 169c           
+169A: A9 CD    lda #$cd			-- CD = downhill, load downhill in A
+169C: 91 14    sta ($14), y		-- print the downhill onto the screen
+169E: 20 A9 16 jsr $16a9		-- goto 16a9 and finish the map generation
+16A1: A0 17    ldy #$17			-- y = 17
+16A3: 20 BB 16 jsr $16bb		-- goto 16bb, find the position based on given Y
+16A6: 4C DF 15 jmp $15df		-- jump to 15df, continue the map generation
+
+16A9: A0 EA    ldy #$ea			-- y = 0xea
+16AB: 20 BB 16 jsr $16bb		-- goto 16bb, find the position based on given Y	
+16AE: A5 16    lda $16			-- load $16, 16 is the x position of the screen
+16B0: 0A       asl a			-- a = a << 1
+16B1: AA       tax				-- x = a
+16B2: A5 14    lda $14			-- load $14
+16B4: 95 50    sta $50, x		-- store the value of a into $50, the colonist position
+16B6: A5 15    lda $15			-- load $15
+16B8: 95 51    sta $51, x		-- store the value of a into $51, the colonist position
+16BA: 60       rts				-- return from subroutine
+
+
+
+-- subroutine: update address 14 and 15 address based on Y, find next position on screen
 -- A = Y; Y = 0x00 if Y positive, Y = 0xff otherwise; 
 -- $14 += original Y
 -- $15 += 0x00 if Y is positive, other wise 0xff 
@@ -1086,7 +1098,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1747: 60       rts          -- return
 
 
--- subroutine
+-- subroutine: get some randomness
 1748: A5 10    lda $10          -- A = $10
 174A: 0A       asl a            -- A << 1
 174B: 45 10    eor $10          -- XOR $10, A^M -> A, A^0x10 = A^0b00010000 -> A
@@ -1194,7 +1206,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 17E0: 95 30    sta $30, x                       -- 
 17E2: BD F5 1C lda $1cf5, x
 17E5: 95 40    sta $40, x                       -- 
-17E7: CA       dex
+17E7: CA       dex				
 17E8: 10 F3    bpl $17dd
 
 -- print fuel remaining line
@@ -1211,20 +1223,20 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 
 
 -- subroutine: switch which colonist hands up
-17FB: A2 04    ldx #$04
-17FD: A0 02    ldy #$02
-17FF: B9 18 00 lda $0018, y
-1802: D0 0A    bne $180e
+17FB: A2 04    ldx #$04		-- X = 04, then X = 02, X = 00. Three index counters for three colonists
+17FD: A0 02    ldy #$02		
+17FF: B9 18 00 lda $0018, y	-- load colonist status from 18, 19, 1A
+1802: D0 0A    bne $180e	-- if not zero, means weather in lander or dead -> no need to change hands, skip
 1804: A9 0B    lda #$0b		-- colonist character set with hands down
-1806: C4 1F    cpy $1f          -- 1F: which colonist puts his hands up
-1808: D0 02    bne $180c
+1806: C4 1F    cpy $1f      -- 1F: which colonist puts his hands up
+1808: D0 02    bne $180c	-- if current hands down, then go to 180C
 180A: A9 0C    lda #$0c    	-- colonist character set with hands up
 180C: 81 50    sta ($50, x)	-- put 2 hands-down colonists, 1 hands-up colonist on the screen
-180E: CA       dex
-180F: CA       dex
-1810: 88       dey
-1811: 10 EC    bpl $17ff
-1813: 60       rts
+180E: CA       dex			-- x--, colonists are every other pixel block
+180F: CA       dex			-- x--
+1810: 88       dey			-- y--, check all three colonists
+1811: 10 EC    bpl $17ff	-- if y is not zero, then go back to check the next colonist
+1813: 60       rts			-- return
 
 
 
@@ -1299,55 +1311,57 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1893: 60       rts
 
 -- subroutine to play sounds
-1894: A4 68    ldy $68
-1896: F0 58    beq $18f0
-1898: 88       dey
-1899: 98       tya
-189A: 0A       asl a
-189B: A8       tay
-189C: A5 13    lda $13
-189E: D0 4D    bne $18ed        --
+1894: A4 68    ldy $68          -- $68 - current music that's to play
+1896: F0 58    beq $18f0        -- if 0 - no audio pointer, clear sound register 
+1898: 88       dey              -- change pointer to play next 
+1899: 98       tya              -- A = Y
+189A: 0A       asl a            -- 
+189B: A8       tay              -- Y = A
+189C: A5 13    lda $13          -- load high frequency
+189E: D0 4D    bne $18ed        -- 
 18A0: 8D 0A 90 sta $900a        -- play sounds
-18A3: 8D 0B 90 sta $900b
-18A6: 8D 0C 90 sta $900c
-18A9: B9 60 00 lda $0060, y
-18AC: 85 69    sta $69
-18AE: B9 61 00 lda $0061, y
-18B1: 85 6A    sta $6a
-18B3: A4 12    ldy $12
-18B5: B1 69    lda ($69), y
-18B7: F0 42    beq $18fb
-18B9: 10 04    bpl $18bf
-18BB: A0 00    ldy #$00
-18BD: B1 69    lda ($69), y
-18BF: 85 13    sta $13
-18C1: C8       iny
-18C2: B1 69    lda ($69), y
-18C4: 85 1E    sta $1e
-18C6: C8       iny
-18C7: A9 01    lda #$01
-18C9: 25 1E    and $1e
-18CB: F0 06    beq $18d3
-18CD: B1 69    lda ($69), y
-18CF: 8D 0A 90 sta $900a
-18D2: C8       iny
-18D3: A9 02    lda #$02
-18D5: 25 1E    and $1e
-18D7: F0 06    beq $18df
-18D9: B1 69    lda ($69), y
-18DB: 8D 0B 90 sta $900b
-18DE: C8       iny
-18DF: A9 04    lda #$04
-18E1: 25 1E    and $1e
-18E3: F0 06    beq $18eb
-18E5: B1 69    lda ($69), y
-18E7: 8D 0C 90 sta $900c
-18EA: C8       iny
-18EB: 84 12    sty $12
-18ED: C6 13    dec $13
-18EF: 60       rts
+18A3: 8D 0B 90 sta $900b        -- 
+18A6: 8D 0C 90 sta $900c        -- 
+18A9: B9 60 00 lda $0060, y     -- 
+18AC: 85 69    sta $69          -- 
+18AE: B9 61 00 lda $0061, y     -- 
+18B1: 85 6A    sta $6a          -- 
+18B3: A4 12    ldy $12          -- 
+18B5: B1 69    lda ($69), y     -- 
+18B7: F0 42    beq $18fb        --
+18B9: 10 04    bpl $18bf        --
+18BB: A0 00    ldy #$00         --
+18BD: B1 69    lda ($69), y     --
+18BF: 85 13    sta $13          --
+18C1: C8       iny              --
+18C2: B1 69    lda ($69), y     --
+18C4: 85 1E    sta $1e          --
+18C6: C8       iny              --
+18C7: A9 01    lda #$01         --
+18C9: 25 1E    and $1e          --
+18CB: F0 06    beq $18d3        --
+18CD: B1 69    lda ($69), y     --
+18CF: 8D 0A 90 sta $900a        --
+18D2: C8       iny              --
+18D3: A9 02    lda #$02         --
+18D5: 25 1E    and $1e          --
+18D7: F0 06    beq $18df        --
+18D9: B1 69    lda ($69), y     --
+18DB: 8D 0B 90 sta $900b        --
+18DE: C8       iny              --
+18DF: A9 04    lda #$04         --
+18E1: 25 1E    and $1e          -- 
+18E3: F0 06    beq $18eb        --
+18E5: B1 69    lda ($69), y     --
+18E7: 8D 0C 90 sta $900c        --
+18EA: C8       iny              --
+18EB: 84 12    sty $12          --
+--
+18ED: C6 13    dec $13          --
+18EF: 60       rts              --
 
-clear sound registers
+
+-- clear sound registers
 18F0: A9 00    lda #$00         -- load 0 to A
 18F2: 8D 0A 90 sta $900a        -- clear 900a   
 18F5: 8D 0B 90 sta $900b        -- clear 900b

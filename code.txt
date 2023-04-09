@@ -805,7 +805,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
                         -- $14 += original Y                                                |
                         -- $15 += 0x0 if Y is positive, other wise 0xff                     |
 159B: CA       dex          -- X -= 1                                                       |
-159C: 10 F8    bpl $1596    -- branch on plus,      -----------------------------------------
+159C: 10 F8    bpl $1596    -- branch on plus, when x from 00 to ff, exit loop --------------
 
 
 159E: A9 02    lda #$02     -- A = 0x02

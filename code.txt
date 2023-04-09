@@ -696,7 +696,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14C2: 85 6F    sta $6f          -- $6f = 0x05
 14C4: 20 83 15 jsr $1583        -- jump to subroutine $1583: generate the map and put on colonists, store position
 
--- print lunar rescue on screen -> start at 1e5d
+-- print "lunar rescue" on screen -> start at 1e5d
 14C7: A9 1E    lda #$1e         -- A = 0x1e
 14C9: 85 15    sta $15          -- $15 = A = 0x1e
 14CB: A9 5D    lda #$5d         -- A = 0x5d
@@ -704,12 +704,12 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14CF: A0 00    ldy #$00         -- Y = 0
 14D1: B9 1E 10 lda $101e, y     -- $(101e + Y) = A                  <------------------------
 14D4: C9 0D    cmp #$0d         -- if A == 0d, '\r' <=> 'carriage return'                   |
-14D6: F0 07    beq $14df        -- branch equal to 14df      --------                       |
-14D8: 49 C0    eor #$c0         -- XOR  A^0xc0 -> A                 |                       |
-14DA: 91 14    sta ($14), y     -- $(($14|$15) + Y) = A             |                       |
-14DC: C8       iny              -- Y += 1                           |                       |
-14DD: D0 F2    bne $14d1        -- branch not equal                 | -----------------------
-14DF: A9 8B    lda #$8b         -- A = 0x8b            <-------------
+14D6: F0 07    beq $14df        -- branch equal to 14df      --------------------			|
+14D8: 49 C0    eor #$c0         -- XOR  A^0xc0 -> A                 			|			|
+14DA: 91 14    sta ($14), y     -- store pre-built char into given screen addr  |	        |
+14DC: C8       iny              -- Y += 1                           			|           |
+14DD: D0 F2    bne $14d1        -- branch not equal                 			| -----------
+14DF: A9 8B    lda #$8b         -- A = 0x8b            <-------------------------
 
 -- print "(c) 2016"	on the next line -> start at 1e8b
 14E1: 85 14    sta $14          -- $14 = A = 0x8b
@@ -721,7 +721,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14EE: D0 02    bne $14f2        -- branch not equal to 14f2                 |   ---------       |
 14F0: 49 C0    eor #$c0         -- XOR A ^ 0xc0 -> A                        |           |       |
 14F2: 09 80    ora #$80         -- OR  A || 0x80 -> A                       |   <--------       |
-14F4: 91 14    sta ($14), y     -- $(($14|$15) + Y) = A                     |                   |
+14F4: 91 14    sta ($14), y     -- store pre-built char into  screen addr   |                   |
 14F6: C8       iny              -- Y += 1                                   |                   |
 14F7: D0 EC    bne $14e5        -- branch not equal to zero, ie, if Y!=0    | -------------------
 																			| 
@@ -732,35 +732,36 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14FF: B9 34 10 lda $1034, y     -- A = $(1034 + Y)                  <------------
 1502: F0 07    beq $150b        -- branch on equal zero         ---------       |
 1504: 49 C0    eor #$c0         -- XOR A ^ $c0 -> A                     |       |
-1506: 91 14    sta ($14), y     -- $(($14|$15) + Y) = A                 |       |
+1506: 91 14    sta ($14), y     -- store pre-built char in screen addr  |       |
 1508: C8       iny              -- Y += 1                               |       |
 1509: D0 F4    bne $14ff        -- branch not equal, i.e, not equal 0   | -------
 																		|
 -- print "high score" on start screen -> start at 1fbe					|
-150B: A9 BE    lda #$be         -- A = 0xbe                  <-----------
+150B: A9 BE    lda #$be         -- A = be                  <-----------
 150D: 85 14    sta $14          -- $14 = A
-150F: A9 1F    lda #$1f         -- A = $1f
+150F: A9 1F    lda #$1f         -- A = 1f
 1511: 85 15    sta $15          -- $15 = A
 1513: A0 00    ldy #$00         -- Y = 0x00
-1515: B9 10 1D lda $1d10, y     -- $(1d10 + Y) = A    <----------
-1518: F0 05    beq $151f        -- branch equal zero            |    ------------
-151A: 91 14    sta ($14), y     -- $(($14|$15) + Y) = A         |               |
-151C: C8       iny              -- Y += 1                       |               |
-151D: D0 F6    bne $1515        -- branch not equal zero  -------               |
--- print "high score name" on start screen -> start at 1fdd						|
-151F: A9 D7    lda #$d7         -- A = 0xd7                         <------------
-1521: 85 14    sta $14          -- $14 = A
+1515: B9 10 1D lda $1d10, y     -- $(1d10 + Y) = A    <--------------
+1518: F0 05    beq $151f        -- branch equal zero            	|    ------------
+151A: 91 14    sta ($14), y     -- store pre-built char screen addr |               |
+151C: C8       iny              -- Y += 1                       	|               |
+151D: D0 F6    bne $1515        -- branch not equal zero  -----------               |
+																					|
+-- print high score keeper name on start screen -> start at 1fdd					|
+151F: A9 D7    lda #$d7         -- A = 0xd7                         <----------------
+1521: 85 14    sta $14          -- $14 = A	
 1523: A0 00    ldy #$00			-- Y = 0x00
-1525: B9 1D 1D lda $1d1d, y
-1528: F0 05    beq $152f
-152A: 91 14    sta ($14), y
-152C: C8       iny
-152D: D0 F6    bne $1525
-152F: 20 5B 17 jsr $175b         -- set score board to zeros
-1532: AD 1C 1D lda $1d1c
-1535: 85 1E    sta $1e
-1537: F0 09    beq $1542
-1539: A2 00    ldx #$00
+1525: B9 1D 1D lda $1d1d, y		-- $(1d1d + Y) = A
+1528: F0 05    beq $152f		-- branch equal zero
+152A: 91 14    sta ($14), y		-- store name into given screen index
+152C: C8       iny				-- Y += 1
+152D: D0 F6    bne $1525		-- branch not equal zero
+152F: 20 5B 17 jsr $175b        -- set score board to zeros
+1532: AD 1C 1D lda $1d1c		-- load history high score into A
+1535: 85 1E    sta $1e			-- $1e = A
+1537: F0 09    beq $1542		-- branch equal zero
+1539: A2 00    ldx #$00			-- X = 0x00
 153B: 20 71 17 jsr $1771
 153E: C6 1E    dec $1e
 1540: D0 F7    bne $1539
@@ -1142,24 +1143,24 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 176E: 10 F8    bpl $1768
 1770: 60       rts
 
--- subroutine: the player scored, the score to be added is in X register originally. 1fed socre related
+-- subroutine: calculate the player scored, the score to be added is in X register originally. 1fed is screen socre related
 1771: A0 03    ldy #$03         -- Y = 03          
 1773: B9 ED 1F lda $1fed, y     -- A = 03 
-1776: 18       clc              -- clear cycle
+1776: 18       clc              -- clear carry
 1777: 69 01    adc #$01         -- A += 01 
-1779: C9 BA    cmp #$ba         -- compare if 9+1-> 进位
-177B: D0 0C    bne $1789        -- 1789 not 进位.
+1779: C9 BA    cmp #$ba         -- if we meet 9+1 situation, we need to carry 1 to the next digit
+177B: D0 0C    bne $1789        -- go 1789 if no need to carry.
 177D: A9 B0    lda #$b0         -- A = b0 
-177F: 99 ED 1F sta $1fed, y
-1782: 88       dey
-1783: 10 EE    bpl $1773
-1785: CA       dex
-1786: D0 E9    bne $1771
-1788: 60       rts
-1789: 99 ED 1F sta $1fed, y
-178C: CA       dex
-178D: D0 E2    bne $1771
-178F: 60       rts
+177F: 99 ED 1F sta $1fed, y		-- store 0 to the score board posotion y, still have carry!
+1782: 88       dey				-- Y -= 1
+1783: 10 EE    bpl $1773		-- if Y >= 0, go 1773
+1785: CA       dex				-- X -= 1
+1786: D0 E9    bne $1771		-- if X != 0, go 1771
+1788: 60       rts				-- return
+1789: 99 ED 1F sta $1fed, y		-- store the score to the score board
+178C: CA       dex				-- X -= 1
+178D: D0 E2    bne $1771		-- if X != 0, go 1771
+178F: 60       rts				-- return
 
 -- clear the screen, put up colonists and landers, and set colonists color, 
 1790: A5 10    lda $10                  -- A = $10 = FF at the first time
@@ -1234,7 +1235,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 
 -- subroutine: switch which colonist hands up
 17FB: A2 04    ldx #$04		-- X = 04, then X = 02, X = 00. Three index counters for three colonists
-17FD: A0 02    ldy #$02		
+17FD: A0 02    ldy #$02		-- Y = 02, 01, 00. counters for three colonists
 17FF: B9 18 00 lda $0018, y	-- load colonist status from 18, 19, 1A
 1802: D0 0A    bne $180e	-- if not zero, means weather in lander or dead -> no need to change hands, skip
 1804: A9 0B    lda #$0b		-- colonist character set with hands down
@@ -1329,7 +1330,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 189B: A8       tay              -- Y = A
 189C: A5 13    lda $13          -- load high frequency
 189E: D0 4D    bne $18ed        -- if not zero, then go to 18ed
-18A0: 8D 0A 90 sta $900a        -- play sounds
+-- play sounds
+18A0: 8D 0A 90 sta $900a        -- play sound
 18A3: 8D 0B 90 sta $900b        -- 
 18A6: 8D 0C 90 sta $900c        -- 
 18A9: B9 60 00 lda $0060, y     -- 

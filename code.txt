@@ -81,10 +81,12 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1059: 20 38 17 jsr $1738        -- jump to subroutine at $1738: scan the keyboard, return upon no key is pressed
 
 105C: 20 D1 16 jsr $16d1        -- jump to subroutine at $16d1, prepare game states
-                                    -- clear the screen, set screen color BLACK
-                                    -- character color WHITE
-                                    -- part unknown
-                                    -- set the timer/fuel and its colors  
+        `                               -- audio setting
+                                        -- clear the screen
+                                        -- set background Black and border colors
+                                        -- set default character colors -> WHITE
+                                        -- load lots of pointers
+        `                               -- set the fuel color
 
 105F: 20 C0 14 jsr $14c0        -- jump to subroutine at $14c0
                                     -- load to the main game menu
@@ -389,7 +391,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 12C4: 4C 74 10 jmp $1074
 
 
--- subroutine ship control logic, calculate feul and update fuel line
+-- subroutine ship control logic, calculate fuel and update fuel line
 12C7: A5 3A    lda $3a                  -- 
 12C9: 29 37    and #$37                 -- 37
 12CB: 85 3A    sta $3a                  -- A = $3a
@@ -960,31 +962,35 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 16D0: 60       rts          --  return
 
 
--- subroutine: I don't understand this subroutine
--- don't understand this part yet
-    -- set background Black and border colors WHITE
+-- subroutine:
+    -- audio setting
+    -- clear the screen
+    -- set background Black and border colors
     -- set default character colors -> WHITE
-    -- set the timer color
+    -- load lots of pointers
+    -- set the fuel color
+    
 16D1: A9 FF    lda #$ff     -- A = 0xff
-16D3: 8D 05 90 sta $9005    -- store to $9005   
+16D3: 8D 05 90 sta $9005    -- store to $9005   --  audio setting
                                                 --  (0b11111111)
                                                 --  bits 0-3 start of character memory 
                                                 --  (default = 0)
                                                 --  bits 4-7 is rest of video address
                                                 --  (default = F)
 16D6: A9 05    lda #$05     -- A = 0x05 = 0b0101
-16D8: 8D 0E 90 sta $900e    -- store to $900e
+16D8: 8D 0E 90 sta $900e    -- store to $900e   --  audio setting
                                                 --  set volume to 5, where 0 is the minimum and 15 is the maximum
                                                 --  bits 0-3 are volume, 4-7 are auxiliary color
 16DB: A9 09    lda #$09     -- A = 0x09         --  0x00001001
-16DD: 8D 0F 90 sta $900f    -- store to $900f   
+16DD: 8D 0F 90 sta $900f    -- store to $900f   --  Screen and border color setting
                                                 --  Screen and border color register
                                                 --  bits 4-7 select background color    -- blackground = BLACK
                                                 --  bits 0-2 select border color        -- border = WHITE
                                                 --  bit 3 sefects inverted or normal mode -- reversed
+
 16E0: 20 2A 17 jsr $172a    -- clear the screen 
 16E3: A2 00    ldx #$00     -- X = 0            -- X = 0
--- set default character colors -> WHITE
+-- set default character colors to WHITE
 -- loop entry                               <------------
 16E5: A9 00    lda #$00     -- A = 0                    |   
 16E7: 95 00    sta $00, x   -- set $00 - $ff to 0       |   set $(00 + X) to 0, reset zero page variables
@@ -994,47 +1000,46 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 16F1: E8       inx          -- X += 1                   |   
 16F2: D0 F1    bne $16e5    -- loop ff times   ----------   terminate: X overflows => FF times
 
-
-Unknown ???????
 16F4: A9 04    lda #$04     -- A = 0x04 
-16F6: 85 11    sta $11      -- $11 = A = 0x04, what does message $11 encode?               
+16F6: 85 11    sta $11      -- $11 is low frequency audio              
 16F8: A9 03    lda #$03     -- A = 0x03 
-16FA: 85 1C    sta $1c      -- $1c = A = 0x03, what does message $1c encode?
+16FA: 85 1C    sta $1c      -- $1c is used at map generate area
 16FC: A2 0B    ldx #$0b     -- X = 0x0b 
 
-
 -- 1ccd, 1cd9 area: 
+        -- import colonists and landers live character set color pointer into address 20-2b
+        -- import four audio pointers from 1cd9 and store into 60-67
 -- loop entry                                  <---------    
-16FE: BD CD 1C lda $1ccd, x -- A = $(1ccd + X)          |   -- user basic area
-1701: 95 20    sta $20, x   -- $(20 + X) = A            |   -- what is the area around address $20
-1703: BD D9 1C lda $1cd9, x -- A = $(1cd9 + X)          |   -- user baisc area
-1706: 95 60    sta $60, x   -- $(60 + X) = A            |   -- what is the area around address $60 
-1708: CA       dex          -- X -= 1                   |   
+16FE: BD CD 1C lda $1ccd, x -- A = $(1ccd + X)          |   -- load pre-built colonist and live character set color pointer
+1701: 95 20    sta $20, x   -- $(20 + X) = A            |   -- store into address 20-2b
+1703: BD D9 1C lda $1cd9, x -- A = $(1cd9 + X)          |   -- load pre-built audio pointer from 1cd9
+1706: 95 60    sta $60, x   -- $(60 + X) = A            |   -- store into 60-67
+1708: CA       dex          -- X -= 1                   |   x--
 1709: 10 F3    bpl $16fe    -- Branch on Result Plus ----   terminate when X is not positive => 10 times
-???????
 
 
-170B: A2 15    ldx #$15     -- X = 0x15
-170D: A9 05    lda #$05     -- A = 0x05 
--- set the timer bar and its colors
--- loop entry                                         <------   on $97ce area -- the timer
-170F: 9D CE 97 sta $97ce, x -- $(97ce + X) = A = 0x5        |   set to 0x05, why 0x05   -- Green
-1712: CA       dex          -- X -= 1                       |   
-1713: E0 08    cpx #$08     -- compare X with 0x08          |   
-1715: D0 F8    bne $170f    -- if X != 0x08           -------   terminate when X == 0x08, 0x15 -> 0x08 == 13 * 0x05
+-- set the fuel bar and its colors
+170B: A2 15    ldx #$15     -- X = 0x15 number of bar pices
+170D: A9 05    lda #$05     -- A = 0x05 color grenn
+
+-- loop entry                                         <------   on $97ce area -- the fuel bar tail 
+170F: 9D CE 97 sta $97ce, x -- $(97ce + X) = A = 0x5        |   set Green to the tail of the fuel bar (13 pices)
+1712: CA       dex          -- X -= 1                       |   x--
+1713: E0 08    cpx #$08     -- compare X with 0x08          |   if X == 0x08
+1715: D0 F8    bne $170f    -- if X != 0x08           -------   terminate when X == 0x08, 0x15 -> 0x08 == 13 times (13 green bar)
 1717: A9 07    lda #$07     -- A = 0x07
 -- 
--- loop entry                                       <-------
-1719: 9D CE 97 sta $97ce, x -- $(97ce+x) == A =0x07        |    set to 0x07, why 0x07   -- Yellow
-171C: CA       dex          -- X -= 1                      |
-171D: E0 02    cpx #$02     -- compare x with 0x02         |
-171F: D0 F8    bne $1719    -- if X != 0x02         --------    terminate when X == 0x02, 0x08 -> 0x02 -- 6 * 0x07 
+-- loop entry                                       <-------    on $97ce area -- the fuel bar middle 
+1719: 9D CE 97 sta $97ce, x -- $(97ce+x) == A =0x07        |    set Yellow to the middle of the fuel bar (6 pices)
+171C: CA       dex          -- X -= 1                      |    x--
+171D: E0 02    cpx #$02     -- compare x with 0x02         |    if X == 0x02
+171F: D0 F8    bne $1719    -- if X != 0x02         --------    terminate when X == 0x02, 0x08 -> 0x02 == 6 times (6 yellow bar)
 1721: A9 02    lda #$02     -- A = 0x02
 -- 
--- loop entry                                         <-------
-1723: 9D CE 97 sta $97ce, x -- $(97ce + X) = 0x02            |  set to 0x02, why 0x02   -- Red
-1726: CA       dex          -- X -= 1                        |
-1727: 10 FA    bpl $1723    -- Branch on result plus  -------   terminate when X == 0, 0x02 -> 0x00  -- 3 * 0x02
+-- loop entry                                         <-------  on $97ce area -- the fuel bar head
+1723: 9D CE 97 sta $97ce, x -- $(97ce + X) = 0x02            |  set Red to the head of the fuel bar (03 pices)
+1726: CA       dex          -- X -= 1                        |  x--
+1727: 10 FA    bpl $1723    -- Branch on result plus  -------   terminate when X == 0, 0x02 -> 0x00 == 3 times (3 red bar)
 1729: 60       rts          -- return 
 
 
@@ -1440,6 +1445,8 @@ Unknown ???????
 
 -- data storage area
 -- audio data part
+
+-- game start music
 1B60: 25 07  $0725, x
 1B62: E1 CF    sbc ($cf, x)
 1B64: AF 21 00 lax $0021
@@ -1489,6 +1496,8 @@ Unknown ???????
 1BAB: FF 00 00 isb $0000, x
 1BAE: 00       brk
 1BAF: 00       brk
+
+-- game end music
 1BB0: 25 06    and $06
 1BB2: D7 BB    dcp $bb, x
 1BB4: 25 06    and $06
@@ -1512,6 +1521,8 @@ Unknown ???????
 1BDB: CF FF 00 dcp $00ff
 1BDE: 00       brk
 1BDF: 00       brk
+
+-- docking success or picking up colonist success music
 1BE0: 03 02    slo ($02, x)
 1BE2: E0 03    cpx #$03
 1BE4: 02       kil
@@ -1521,6 +1532,8 @@ Unknown ???????
 1BE9: 03 02    slo ($02, x)
 1BEB: EC 03 02 cpx $0203
 1BEE: F0 00    beq $1bf0
+
+-- colonist is killed by lander music
 1BF0: 03 02    slo ($02, x)
 1BF2: E0 03    cpx #$03
 1BF4: 02       kil
@@ -1530,6 +1543,9 @@ Unknown ???????
 1BFB: D4 03    nop $03, x
 1BFD: 02       kil
 1BFE: D0 00    bne $1c00
+
+
+
 
 -- special characters set memory area
 -- 00  reserved for ship - currently not used
@@ -1829,13 +1845,18 @@ FF    sta ($ff, x)
 1CCA: 00       brk
 1CCB: 00       brk
 1CCC: 00       brk
+
+20-2f: colonist and landers color pointer
 1CCD: E5 97    sbc $97
 1CCF: E7 97    isb $97
 1CD1: E9 97    sbc #$97
 1CD3: F4 97    nop $97, x
 1CD5: F6 97    inc $97, x
 1CD7: F8       sed
-1CD8: 97 60    sax $60, y
+1CD8: 97 
+
+-- 60-6f 1b60, 1bb0, 1be0, 1bf0 four audio pointer
+1CD9: 60
 1CDA: 1B B0 1B slo $1bb0, y
 1CDD: E0 1B    cpx #$1b
 1CDF: F0 1B    beq $1cfc

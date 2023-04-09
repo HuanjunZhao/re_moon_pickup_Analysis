@@ -135,11 +135,11 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 10B1: D0 F6    bne $10a9
 
 -- guess: if press key, run main game, else show demo
-10B3: 20 38 17 jsr $1738
-10B6: A9 05    lda #$05
+10B3: 20 38 17 jsr $1738         -- jump to subroutine at $1738: scan the keyboard, return upon no key is pressed
+10B6: A9 05    lda #$05         -- load 05 to A
 10B8: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
-10BB: A9 02    lda #$02
-10BD: 85 68    sta $68
+10BB: A9 02    lda #$02         -- load pointer 02 to A
+10BD: 85 68    sta $68          -- $68 = 02, when play music, play 1bb0 music, game end
 10BF: A5 2F    lda $2f
 10C1: CD 1C 1D cmp $1d1c
 10C4: 90 6A    bcc $1130
@@ -250,8 +250,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 11A8: A6 1E    ldx $1e
 11AA: A9 02    lda #$02
 11AC: 81 20    sta ($20, x)             -- read $20 area
-11AE: A9 04    lda #$04
-11B0: 85 68    sta $68
+11AE: A9 04    lda #$04         -- load pointer 04 to A
+11B0: 85 68    sta $68          -- $68 = 04, when play music, play 1bf0 music, colonist is killed by lander.
 11B2: A5 1D    lda $1d
 11B4: 30 AE    bmi $1164
 11B6: A9 00    lda #$00
@@ -377,8 +377,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 12A2: A5 3A    lda $3a
 12A4: 29 37    and #$37
 12A6: 85 3A    sta $3a
-12A8: A9 03    lda #$03
-12AA: 85 68    sta $68
+12A8: A9 03    lda #$03                 -- load 03 to A
+12AA: 85 68    sta $68                  -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
 12AC: 20 A9 14 jsr $14a9
 12AF: 20 DD 13 jsr $13dd
 12B2: 20 00 19 jsr $1900			
@@ -758,8 +758,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1542: AE 1B 1D ldx $1d1b
 1545: F0 03    beq $154a
 1547: 20 71 17 jsr $1771
-154A: A9 01    lda #$01
-154C: 85 68    sta $68
+154A: A9 01    lda #$01         -- load 1 to A
+154C: 85 68    sta $68          -- $68 = 01, when play music, play 1b60 music, game started.
 154E: 20 1E EB jsr $eb1e        -- get keyboard input 
 1551: 20 42 17 jsr $1742        -- jump to $1742, load $9004 to A until zero, TV raster beam line
 1554: 20 94 18 jsr $1894        -- play sound
@@ -767,8 +767,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1559: D0 0F    bne $156a
 155B: C6 6F    dec $6f
 155D: D0 0B    bne $156a
-155F: A9 00    lda #$00
-1561: 85 68    sta $68
+155F: A9 00    lda #$00         -- load 0 to A
+1561: 85 68    sta $68          -- $68 = 00, when play music, play nothing, or prepare to play noise
 1563: A9 01    lda #$01
 1565: 85 5E    sta $5e
 1567: 4C 2A 17 jmp $172a
@@ -776,8 +776,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 156C: C9 40    cmp #$40
 156E: F0 DA    beq $154a
 1570: 20 38 17 jsr $1738
-1573: A9 00    lda #$00
-1575: 85 68    sta $68
+1573: A9 00    lda #$00         -- load 0 to A
+1575: 85 68    sta $68          -- $68 = 00, when play music, play nothing, or prepare to play noise
 1577: A9 09    lda #$09
 1579: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
 157C: A5 11    lda $11
@@ -785,16 +785,20 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1580: 4C 2A 17 jmp $172a
 
 --  subroutine: generate the map and put on colonists
+-- 1583-158B using value in $11 to generate X -> where should we start to draw the map(which left-est position on the screen) 
 1583: A5 11    lda $11      -- A = $11
 1585: 85 10    sta $10      -- store A at $10,   
-1587: 29 07    and #$07     -- and 0x07 = 0b0111
-1589: 09 08    ora #$08     -- or 0x08 = 0b1000
-158B: AA       tax          -- transfer A to X, X = A
-158C: A9 1E    lda #$1e     -- A = 0x1e
-158E: 85 15    sta $15      -- $15 = A
+1587: 29 07    and #$07     -- choose only three bits, 0x07 = 0b0111
+1589: 09 08    ora #$08     -- or 0x08 = 0b1000 -> add 1 to the result above
+158B: AA       tax          -- transfer A to X, X = A -> after those operations, X = 0c
+-- 14, 15 stored 1e00, which is screen starting address (left-est)
+158C: A9 1E    lda #$1e     -- A = 0x1e         
+158E: 85 15    sta $15      -- $15 = 0x1e
 1590: A9 00    lda #$00     -- A = 0
 1592: 85 14    sta $14      -- $14 = A = 0
 1594: 85 16    sta $16      -- $16 = A = 0
+
+-- small loop: find a ramdom position to start the map (pos has to be left of the screen)
 1596: A0 16    ldy #$16     -- Y = 16            <-------------------------------------------
 1598: 20 BB 16 jsr $16bb                                                                    |
                         -- subroutine: A = Y; Y = 0x0 if Y positive, Y = 0xff otherwise;    |
@@ -802,6 +806,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
                         -- $15 += 0x0 if Y is positive, other wise 0xff                     |
 159B: CA       dex          -- X -= 1                                                       |
 159C: 10 F8    bpl $1596    -- branch on plus,      -----------------------------------------
+
+
 159E: A9 02    lda #$02     -- A = 0x02
 15A0: 85 17    sta $17      -- $17 = A = 0x02
 15A2: 20 48 17 jsr $1748    -- 
@@ -824,6 +830,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 15C5: 4C FB 17 jmp $17fb
 15C8: A0 16    ldy #$16
 
+-- Subroutine:
 15CA: 20 BB 16 jsr $16bb
 15CD: A9 E3    lda #$e3                 --  E3: safe landing ground
 15CF: 91 14    sta ($14), y             --  
@@ -944,7 +951,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 
 
 
--- subroutine: A = Y; Y = 0x00 if Y positive, Y = 0xff otherwise;
+-- subroutine: update address 14 and 15 addr 14 = 14 + 0x16
+-- A = Y; Y = 0x00 if Y positive, Y = 0xff otherwise; 
 -- $14 += original Y
 -- $15 += 0x00 if Y is positive, other wise 0xff 
 16BB: 98       tya          --  transfer Y to A 
@@ -1240,8 +1248,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1834: 65 2F    adc $2f                  -- A += $2f ??? so what is 2f
 1836: 85 2F    sta $2f                  -- store back to 2f ???
 1838: 20 71 17 jsr $1771                -- add score to the scoreboard
-183B: A9 03    lda #$03                 
-183D: 85 68    sta $68                  
+183B: A9 03    lda #$03                 -- load 03 to A
+183D: 85 68    sta $68                  -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
 183F: 60       rts
 1840: A2 06    ldx #$06
 1842: B5 30    lda $30, x
@@ -1339,13 +1347,13 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 18ED: C6 13    dec $13
 18EF: 60       rts
 
-
-18F0: A9 00    lda #$00
-18F2: 8D 0A 90 sta $900a
-18F5: 8D 0B 90 sta $900b
-18F8: 8D 0C 90 sta $900c
-18FB: 85 68    sta $68
-18FD: 85 12    sta $12
+clear sound registers
+18F0: A9 00    lda #$00         -- load 0 to A
+18F2: 8D 0A 90 sta $900a        -- clear 900a   
+18F5: 8D 0B 90 sta $900b        -- clear 900b
+18F8: 8D 0C 90 sta $900c        -- clear 900c
+18FB: 85 68    sta $68          -- clear 68 -> audio pointer
+18FD: 85 12    sta $12          -- clear 12
 18FF: 60       rts
 
 

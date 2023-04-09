@@ -5,7 +5,8 @@ Tested by b@1e00= x (x is map address)
 05-14 is game's special char set
 1b, 1c"
 1f which colonist hands is up
-2d
+2c: current fuel in current slot
+2d: maximum fuel per slot
 2E for storing game score
 F8 fuel line
 32 + 33 = position of the invisible part of the lander
@@ -14,14 +15,23 @@ F8 fuel line
 3e + 3f = position of the left part of the orbital ship
 11 12 13 low midium high Frequency
 3A: lander orientation + fuel or not
+4A: F1 - lander left or right, EF - lander straight
+46: 
+47: FD, FE - explode when collide to orbital docking pad, FF - reattach to orbital docking pad, 00 - safe to land, 01, 02 - crash on landing 
+48: F9 - left, 00 - straight up, 07 right
+49: FF - left, 00 - straight up, 00 right
+
 3E: orbital left position 1
 3F: orbital left position 2
-
+3a + 3b = lander orientation + fuel or not
 
 keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
-
 1F: which colonist puts hand up
- 
+
+14, 15: landed position 1 
+16, 17: landed position 2
+
+
 -- BASIC Stub
 1001: 47 10    sre $10          -- 
 1003: 0A       asl a            --
@@ -108,7 +118,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1093: 4C BD 11 jmp $11bd        -- check lander status, and trigger corresponding events
 
 1096: 20 62 13 jsr $1362        -- 
-1099: 4C 7A 10 jmp $107a
+1099: 4C 7A 10 jmp $107a        -- end of game event loop
 
 109C: A9 1E    lda #$1e         -- 1e8a -> GAME OVER!
 109E: 85 15    sta $15
@@ -308,8 +318,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1237: A5 3A    lda $3a
 1239: 29 10    and #$10
 123B: F0 F7    beq $1234
-123D: A5 47    lda $47
-123F: C9 FF    cmp #$ff
+123D: A5 47    lda $47                  -- if the lander is safe to be attached back to orbital docking pad
+123F: C9 FF    cmp #$ff                 
 1241: D0 F1    bne $1234
 1243: A5 45    lda $45
 1245: D0 ED    bne $1234
@@ -402,7 +412,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 12EE: C9 0F    cmp #$0f                 -- key Enter
 12F0: D0 6F    bne $1361                -- lander explode 
 -- set lander explosion flag
-12F2: A9 80    lda #$80                 -- A = 80
+12F2: A9 80    lda #$80                 -- A = 80       trigger lander explode process
 12F4: 85 1D    sta $1d                  -- 1d = 80 > lander exploded
 12F6: D0 69    bne $1361                -- return
 -- A: move left
@@ -412,11 +422,11 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 12FE: 85 3A    sta $3a                  -- lander orientation left
 1300: A9 FF    lda #$ff                 -- A = FF 
 1302: 85 4B    sta $4b                  -- $4b = FF
-1304: 85 49    sta $49                  -- 
-1306: A9 F1    lda #$f1                 -- A = F1 
-1308: 85 4A    sta $4a                  -- 
-130A: A9 F9    lda #$f9                 -- A = F9
-130C: 85 48    sta $48                  -- 
+1304: 85 49    sta $49                  -- $49 = FF
+1306: A9 F1    lda #$f1                 -- 
+1308: 85 4A    sta $4a                  -- $4a = F1
+130A: A9 F9    lda #$f9                 -- 
+130C: 85 48    sta $48                  -- $48 = F9
 130E: D0 51    bne $1361                -- 
 --
 -- W: put lander straight
@@ -425,24 +435,24 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1314: A9 FF    lda #$ff                 -- 
 1316: 85 4B    sta $4b                  -- $4b = FF
 1318: A9 EF    lda #$ef                 -- 
-131A: 85 4A    sta $4a                  -- 
+131A: 85 4A    sta $4a                  -- $4a = EF
 131C: A9 00    lda #$00                 -- 
-131E: 85 49    sta $49                  -- 
-1320: 85 48    sta $48                  -- 
+131E: 85 49    sta $49                  -- $49 = 00
+1320: 85 48    sta $48                  -- $48 = 00
 1322: F0 3D    beq $1361                -- 
 -- D: move right
 1324: A5 3B    lda $3b                  -- 3b <-> 1: on the loading dock, or orbital docking pad, 0: detached
-1326: D0 39    bne $1361                -- 
+1326: D0 39    bne $1361                -- fuel
 1328: A9 27    lda #$27                 -- 
 132A: 85 3A    sta $3a                  -- lander orientation right
 132C: A9 FF    lda #$ff                 -- 
 132E: 85 4B    sta $4b                  -- $4b = FF
 1330: A9 F1    lda #$f1                 -- 
-1332: 85 4A    sta $4a                  -- $4a = 
+1332: 85 4A    sta $4a                  -- $4a = F1 
 1334: A9 00    lda #$00                 -- 
-1336: 85 49    sta $49                  -- 
+1336: 85 49    sta $49                  -- $49 = 00
 1338: A9 07    lda #$07                 -- 
-133A: 85 48    sta $48                  -- 
+133A: 85 48    sta $48                  -- $48 = 07
 133C: D0 23    bne $1361                -- 
 -- move up, use fuel 
 133E: A5 4E    lda $4e                  -- 4e|4f fuel 
@@ -459,47 +469,52 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1355: D0 0A    bne $1361                -- return 
 1357: A0 00    ldy #$00                 -- Y = 0
 1359: 91 4E    sta ($4e), y             -- decrease fuel line 
-135B: C6 4E    dec $4e                  -- when pointer to 1FCE, no fuel
+135B: C6 4E    dec $4e                  -- when pointer to 1FCE, no fuel$47
 135D: A5 2D    lda $2d                  -- maximum fuel per slot
 135F: 85 2C    sta $2c                  -- reload maximum fuel for this slot
 1361: 60       rts                      -- return
 
 
-1362: AD 0D 90 lda $900d
-1365: F0 1A    beq $1381
-1367: 18       clc
-1368: A5 48    lda $48
-136A: 65 44    adc $44
-136C: 85 44    sta $44
-136E: A5 49    lda $49
-1370: 65 45    adc $45
-1372: 85 45    sta $45
-1374: 18       clc
-1375: A5 4A    lda $4a          --- 4a ???
-1377: 65 46    adc $46
-1379: 85 46    sta $46
-137B: A5 4B    lda $4b          --- 4b ???
-137D: 65 47    adc $47
-137F: 85 47    sta $47
-1381: A5 3B    lda $3b
-1383: D0 0B    bne $1390
-1385: 18       clc
-1386: A9 07    lda #$07
+-- if delete this part, ship won't move
+1362: AD 0D 90 lda $900d                -- load noise
+1365: F0 1A    beq $1381                -- 
+1367: 18       clc                      -- 
+1368: A5 48    lda $48                  -- 
+136A: 65 44    adc $44                  -- a $44 += $48
+136C: 85 44    sta $44                  -- 
+136E: A5 49    lda $49                  -- 
+1370: 65 45    adc $45                  -- 
+1372: 85 45    sta $45                  -- 
+1374: 18       clc                      -- 
+1375: A5 4A    lda $4a                  -- 4a ???
+1377: 65 46    adc $46                  -- 
+1379: 85 46    sta $46                  -- 
+137B: A5 4B    lda $4b                  -- 4b ???
+137D: 65 47    adc $47                  -- 
+137F: 85 47    sta $47                  -- 
+
+--
+1381: A5 3B    lda $3b                  -- if not fueled
+1383: D0 0B    bne $1390                -- 
+1385: 18       clc                      
+1386: A9 07    lda #$07                 -- 
 1388: 65 46    adc $46
 138A: 85 46    sta $46
-138C: 90 02    bcc $1390
-138E: E6 47    inc $47
-1390: 18       clc
+138C: 90 02    bcc $1390                -- branch on carry clear
+138E: E6 47    inc $47                  -- lander start to free drop
+1390: 18       clc                      -- 
+
+
 1391: A5 44    lda $44
 1393: 65 40    adc $40
 1395: 85 40    sta $40
-1397: A5 45    lda $45
+1397: A5 45    lda $45                  -- last 
 1399: 65 41    adc $41
-139B: 85 41    sta $41
+139B: 85 41    sta $41                  -- 41: speed on x axis
 139D: C9 A8    cmp #$a8
 139F: B0 1D    bcs $13be
 13A1: 18       clc
-13A2: A5 46    lda $46
+13A2: A5 46    lda $46 
 13A4: 65 42    adc $42
 13A6: 85 42    sta $42
 13A8: A5 47    lda $47
@@ -769,7 +784,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 
 --  subroutine: generate the map and put on colonists
 1583: A5 11    lda $11      -- A = $11
-1585: 85 10    sta $10      -- store A at $10, 
+1585: 85 10    sta $10      -- store A at $10,   
 1587: 29 07    and #$07     -- and 0x07 = 0b0111
 1589: 09 08    ora #$08     -- or 0x08 = 0b1000
 158B: AA       tax          -- transfer A to X, X = A
@@ -1418,160 +1433,12 @@ Unknown ???????
 
 
 
---- null section, data storage area
-19A0: FF FF FF isb $ffff, x
-19A3: FF FF FF isb $ffff, x
-19A6: FF FF FF isb $ffff, x
-19A9: FF FF FF isb $ffff, x
-19AC: FF FF FF isb $ffff, x
-19AF: FF FF FF isb $ffff, x
-19B2: FF FF FF isb $ffff, x
-19B5: FF FF FF isb $ffff, x
-19B8: FF FF FF isb $ffff, x
-19BB: FF FF FF isb $ffff, x
-19BE: FF FF FF isb $ffff, x
-19C1: FF FF FF isb $ffff, x
-19C4: FF FF FF isb $ffff, x
-19C7: FF FF FF isb $ffff, x
-19CA: FF FF FF isb $ffff, x
-19CD: FF FF FF isb $ffff, x
-19D0: FF FF FF isb $ffff, x
-19D3: FF FF FF isb $ffff, x
-19D6: FF FF FF isb $ffff, x
-19D9: FF FF FF isb $ffff, x
-19DC: FF FF FF isb $ffff, x
-19DF: FF FF FF isb $ffff, x
-19E2: FF FF FF isb $ffff, x
-19E5: FF FF FF isb $ffff, x
-19E8: FF FF FF isb $ffff, x
-19EB: FF FF FF isb $ffff, x
-19EE: FF FF FF isb $ffff, x
-19F1: FF FF FF isb $ffff, x
-19F4: FF FF FF isb $ffff, x
-19F7: FF FF FF isb $ffff, x
-19FA: FF FF FF isb $ffff, x
-19FD: FF FF FF isb $ffff, x
-1A00: FF FF FF isb $ffff, x
-1A03: FF FF FF isb $ffff, x
-1A06: FF FF FF isb $ffff, x
-1A09: FF FF FF isb $ffff, x
-1A0C: FF FF FF isb $ffff, x
-1A0F: FF FF FF isb $ffff, x
-1A12: FF FF FF isb $ffff, x
-1A15: FF FF FF isb $ffff, x
-1A18: FF FF FF isb $ffff, x
-1A1B: FF FF FF isb $ffff, x
-1A1E: FF FF FF isb $ffff, x
-1A21: FF FF FF isb $ffff, x
-1A24: FF FF FF isb $ffff, x
-1A27: FF FF FF isb $ffff, x
-1A2A: FF FF FF isb $ffff, x
-1A2D: FF FF FF isb $ffff, x
-1A30: FF FF FF isb $ffff, x
-1A33: FF FF FF isb $ffff, x
-1A36: FF FF FF isb $ffff, x
-1A39: FF FF FF isb $ffff, x
-1A3C: FF FF FF isb $ffff, x
-1A3F: FF FF FF isb $ffff, x
-1A42: FF FF FF isb $ffff, x
-1A45: FF FF FF isb $ffff, x
-1A48: FF FF FF isb $ffff, x
-1A4B: FF FF FF isb $ffff, x
-1A4E: FF FF FF isb $ffff, x
-1A51: FF FF FF isb $ffff, x
-1A54: FF FF FF isb $ffff, x
-1A57: FF FF FF isb $ffff, x
-1A5A: FF FF FF isb $ffff, x
-1A5D: FF FF FF isb $ffff, x
-1A60: FF FF FF isb $ffff, x
-1A63: FF FF FF isb $ffff, x
-1A66: FF FF FF isb $ffff, x
-1A69: FF FF FF isb $ffff, x
-1A6C: FF FF FF isb $ffff, x
-1A6F: FF FF FF isb $ffff, x
-1A72: FF FF FF isb $ffff, x
-1A75: FF FF FF isb $ffff, x
-1A78: FF FF FF isb $ffff, x
-1A7B: FF FF FF isb $ffff, x
-1A7E: FF FF FF isb $ffff, x
-1A81: FF FF FF isb $ffff, x
-1A84: FF FF FF isb $ffff, x
-1A87: FF FF FF isb $ffff, x
-1A8A: FF FF FF isb $ffff, x
-1A8D: FF FF FF isb $ffff, x
-1A90: FF FF FF isb $ffff, x
-1A93: FF FF FF isb $ffff, x
-1A96: FF FF FF isb $ffff, x
-1A99: FF FF FF isb $ffff, x
-1A9C: FF FF FF isb $ffff, x
-1A9F: FF FF FF isb $ffff, x
-1AA2: FF FF FF isb $ffff, x
-1AA5: FF FF FF isb $ffff, x
-1AA8: FF FF FF isb $ffff, x
-1AAB: FF FF FF isb $ffff, x
-1AAE: FF FF FF isb $ffff, x
-1AB1: FF FF FF isb $ffff, x
-1AB4: FF FF FF isb $ffff, x
-1AB7: FF FF FF isb $ffff, x
-1ABA: FF FF FF isb $ffff, x
-1ABD: FF FF FF isb $ffff, x
-1AC0: FF FF FF isb $ffff, x
-1AC3: FF FF FF isb $ffff, x
-1AC6: FF FF FF isb $ffff, x
-1AC9: FF FF FF isb $ffff, x
-1ACC: FF FF FF isb $ffff, x
-1ACF: FF FF FF isb $ffff, x
-1AD2: FF FF FF isb $ffff, x
-1AD5: FF FF FF isb $ffff, x
-1AD8: FF FF FF isb $ffff, x
-1ADB: FF FF FF isb $ffff, x
-1ADE: FF FF FF isb $ffff, x
-1AE1: FF FF FF isb $ffff, x
-1AE4: FF FF FF isb $ffff, x
-1AE7: FF FF FF isb $ffff, x
-1AEA: FF FF FF isb $ffff, x
-1AED: FF FF FF isb $ffff, x
-1AF0: FF FF FF isb $ffff, x
-1AF3: FF FF FF isb $ffff, x
-1AF6: FF FF FF isb $ffff, x
-1AF9: FF FF FF isb $ffff, x
-1AFC: FF FF FF isb $ffff, x
-1AFF: FF FF FF isb $ffff, x
-1B02: FF FF FF isb $ffff, x
-1B05: FF FF FF isb $ffff, x
-1B08: FF FF FF isb $ffff, x
-1B0B: FF FF FF isb $ffff, x
-1B0E: FF FF FF isb $ffff, x
-1B11: FF FF FF isb $ffff, x
-1B14: FF FF FF isb $ffff, x
-1B17: FF FF FF isb $ffff, x
-1B1A: FF FF FF isb $ffff, x
-1B1D: FF FF FF isb $ffff, x
-1B20: FF FF FF isb $ffff, x
-1B23: FF FF FF isb $ffff, x
-1B26: FF FF FF isb $ffff, x
-1B29: FF FF FF isb $ffff, x
-1B2C: FF FF FF isb $ffff, x
-1B2F: FF FF FF isb $ffff, x
-1B32: FF FF FF isb $ffff, x
-1B35: FF FF FF isb $ffff, x
-1B38: FF FF FF isb $ffff, x
-1B3B: FF FF FF isb $ffff, x
-1B3E: FF FF FF isb $ffff, x
-1B41: FF FF FF isb $ffff, x
-1B44: FF FF FF isb $ffff, x
-1B47: FF FF FF isb $ffff, x
-1B4A: FF FF FF isb $ffff, x
-1B4D: FF FF FF isb $ffff, x
-1B50: FF FF FF isb $ffff, x
-1B53: FF FF FF isb $ffff, x
-1B56: FF FF FF isb $ffff, x
-1B59: FF FF FF isb $ffff, x
-1B5C: FF FF FF isb $ffff, x
-1B5F: FF 			isb
+--- null section
+19A0 - 1B5F: FF ...... FF
 --- end of null parts
 
 
+-- data storage area
 -- audio data part
 1B60: 25 07  $0725, x
 1B62: E1 CF    sbc ($cf, x)
@@ -1833,7 +1700,7 @@ Unknown ???????
 
 
 
--- image shifting buffer area
+-- orbital docking pad shifting buffer area
 1C68: 00       brk
 1C69: 00       brk
 1C6A: 00       brk
@@ -1977,12 +1844,12 @@ FF    sta ($ff, x)
 1CE3: 00       brk
 1CE4: 00       brk
 
--- 30 - 3F maybe glook?
+-- 30 - 3F
 1CE5: 2E 1E 44 rol $441e                -- 17DD modify
 1CE8: 1E 2F 1E asl $1e2f, x
 1CEB: 45 1E    eor $1e
-1CED: 02       kil
-1CEE: 02       kil
+1CED: 02       kil                      -- ship first appear pos 
+1CEE: 02       kil                      -- ship first appear pos
 1CEF: 17 01    slo $01, x
 1CF1: FF 03 FF isb $ff03, x
 1CF4: 1D	   ora    

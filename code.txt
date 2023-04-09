@@ -694,7 +694,9 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 -- subroutine: load main game menu, play main menu music
 14C0: A9 05    lda #$05         -- A = 0x05
 14C2: 85 6F    sta $6f          -- $6f = 0x05
-14C4: 20 83 15 jsr $1583        -- jump to subroutine $1583: generate the map and put on colonists
+14C4: 20 83 15 jsr $1583        -- jump to subroutine $1583: generate the map and put on colonists, store position
+
+-- print lunar rescue on screen -> start at 1e5d
 14C7: A9 1E    lda #$1e         -- A = 0x1e
 14C9: 85 15    sta $15          -- $15 = A = 0x1e
 14CB: A9 5D    lda #$5d         -- A = 0x5d
@@ -708,6 +710,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14DC: C8       iny              -- Y += 1                           |                       |
 14DD: D0 F2    bne $14d1        -- branch not equal                 | -----------------------
 14DF: A9 8B    lda #$8b         -- A = 0x8b            <-------------
+
+-- print "(c) 2016"	on the next line -> start at 1e8b
 14E1: 85 14    sta $14          -- $14 = A = 0x8b
 14E3: A0 00    ldy #$00         -- Y = 0x00
 14E5: B9 2B 10 lda $102b, y     -- A = $(102b + Y)                              <----------------
@@ -720,6 +724,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14F4: 91 14    sta ($14), y     -- $(($14|$15) + Y) = A                     |                   |
 14F6: C8       iny              -- Y += 1                                   |                   |
 14F7: D0 EC    bne $14e5        -- branch not equal to zero, ie, if Y!=0    | -------------------
+																			| 
+-- print "by ANDREW GROENEVELDT" on start screen -> start at 1eb2			|
 14F9: A9 B2    lda #$b2         -- A = $b2                          <--------
 14FB: 85 14    sta $14          -- $14 = A
 14FD: A0 00    ldy #$00         -- Y = 00
@@ -729,6 +735,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1506: 91 14    sta ($14), y     -- $(($14|$15) + Y) = A                 |       |
 1508: C8       iny              -- Y += 1                               |       |
 1509: D0 F4    bne $14ff        -- branch not equal, i.e, not equal 0   | -------
+																		|
+-- print "high score" on start screen -> start at 1fbe					|
 150B: A9 BE    lda #$be         -- A = 0xbe                  <-----------
 150D: 85 14    sta $14          -- $14 = A
 150F: A9 1F    lda #$1f         -- A = $1f
@@ -739,9 +747,10 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 151A: 91 14    sta ($14), y     -- $(($14|$15) + Y) = A         |               |
 151C: C8       iny              -- Y += 1                       |               |
 151D: D0 F6    bne $1515        -- branch not equal zero  -------               |
+-- print "high score name" on start screen -> start at 1fdd						|
 151F: A9 D7    lda #$d7         -- A = 0xd7                         <------------
-1521: 85 14    sta $14          -- 
-1523: A0 00    ldy #$00
+1521: 85 14    sta $14          -- $14 = A
+1523: A0 00    ldy #$00			-- Y = 0x00
 1525: B9 1D 1D lda $1d1d, y
 1528: F0 05    beq $152f
 152A: 91 14    sta ($14), y
@@ -771,7 +780,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1561: 85 68    sta $68          -- $68 = 00, when play music, play nothing, or prepare to play noise
 1563: A9 01    lda #$01
 1565: 85 5E    sta $5e
-1567: 4C 2A 17 jmp $172a
+1567: 4C 2A 17 jmp $172a		-- jump to $172a, clear screen
 156A: A5 C5    lda $c5
 156C: C9 40    cmp #$40
 156E: F0 DA    beq $154a
@@ -782,7 +791,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1579: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
 157C: A5 11    lda $11
 157E: 85 10    sta $10
-1580: 4C 2A 17 jmp $172a
+1580: 4C 2A 17 jmp $172a		- jump to $172a, clear screen
 
 --  subroutine: generate the map and put on colonists
 -- 1583-158B using value in $11 to generate X -> where should we start to draw the map(which left-est position on the screen) 
@@ -1160,6 +1169,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1799: 85 18    sta $18                  -- $18 = 0 
 179B: 85 19    sta $19                  -- $19 = 0 
 179D: 85 1A    sta $1a                  -- $1a = 0
+
 -- loop three times: put up colonists and landers, and set colonists color. 04, 02, 00 three astrronauts or landers counters
 179F: A2 04    ldx #$04                 -- X = 04 
 17A1: A9 0B    lda #$0b                 -- colonist character set
@@ -1315,10 +1325,10 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1896: F0 58    beq $18f0        -- if 0 - no audio pointer, clear sound register 
 1898: 88       dey              -- change pointer to play next 
 1899: 98       tya              -- A = Y
-189A: 0A       asl a            -- 
+189A: 0A       asl a            -- A <<= 1
 189B: A8       tay              -- Y = A
 189C: A5 13    lda $13          -- load high frequency
-189E: D0 4D    bne $18ed        -- 
+189E: D0 4D    bne $18ed        -- if not zero, then go to 18ed
 18A0: 8D 0A 90 sta $900a        -- play sounds
 18A3: 8D 0B 90 sta $900b        -- 
 18A6: 8D 0C 90 sta $900c        -- 

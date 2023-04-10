@@ -113,7 +113,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 107A: 20 94 18 jsr $1894        -- play sound according last set Y value in last loop													|
 107D: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line							|
 1080: 20 A9 14 jsr $14a9		-- update ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels						|
-1083: 20 DD 13 jsr $13dd		-- game logic																					|
+1083: 20 DD 13 jsr $13dd		-- game logic																							|
 1086: 20 00 19 jsr $1900		-- 1900: move orbital docking pad																		|						
 1089: 20 FB 17 jsr $17fb		-- 17fb: switch which colonist hands up																	|									
 108C: 20 C7 12 jsr $12c7        -- 12c7: get keyboard input and update lander 															|
@@ -232,14 +232,14 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1163: 60       rts				-- if we get an input, return to the caller
 
 
-1164: A5 1B    lda $1b
-1166: 0A       asl a
-1167: AA       tax
-1168: A9 02    lda #$02
-116A: 81 26    sta ($26, x)
-116C: A9 00    lda #$00
-116E: 85 1D    sta $1d
-1170: 20 40 18 jsr $1840
+1164: A5 1B    lda $1b			-- load $1b to A, how many landers are left
+1166: 0A       asl a			-- A = A * 2, landers are not close to each other, there are space between lander status in right 
+1167: AA       tax				-- transfer A to X, calculate lander color pointer.
+1168: A9 02    lda #$02			-- load red color into A	
+116A: 81 26    sta ($26, x)		-- lander live character set color pointer
+116C: A9 00    lda #$00			-- load 0 into A
+116E: 85 1D    sta $1d			-- store 0 into 1D
+1170: 20 40 18 jsr $1840		-- jump to subroutine $1840, draw lander status
 1173: A5 5E    lda $5e
 1175: F0 03    beq $117a
 1177: 4C 4B 10 jmp $104b
@@ -414,9 +414,9 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 12CB: 85 3A    sta $3a                  -- A = $3a
 12CD: A9 00    lda #$00                 -- A = 00
 12CF: 8D 0D 90 sta $900d                -- noise 
-12D2: A5 5E    lda $5e                  -- $5e = A
-12D4: F0 03    beq $12d9                -- 12d9
-12D6: 4C 70 19 jmp $1970                -- 
+12D2: A5 5E    lda $5e                  -- $5e = A, if 5e is not 0, do the demo.
+12D4: F0 03    beq $12d9                -- goto 12d9, read user input and then control lander
+12D6: 4C 70 19 jmp $1970                -- goto 1970, play demo
 12D9: 20 1E EB jsr $eb1e                -- read from keyboard
 -- keyboard: 09-W, 11-A, 12-D, 20-space, explode-Enter at C5, CB
 12DC: A5 C5    lda $c5                  -- load last read character 
@@ -692,7 +692,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14A6: 85 1F    sta $1f			-- store a into 1f, 1f is which colonist hands up
 14A8: 60       rts				-- return
 
--- subroutine: update ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels
+-- subroutine: update and set ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels
 -- shifting ship pixel
 14A9: A9 00    lda #$00			-- A = 00
 14AB: A2 06    ldx #$06			-- X = 06
@@ -1284,103 +1284,114 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 183B: A9 03    lda #$03                 -- load 03 to A
 183D: 85 68    sta $68                  -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
 183F: 60       rts
-1840: A2 06    ldx #$06
-1842: B5 30    lda $30, x
-1844: 95 56    sta $56, x
-1846: B5 31    lda $31, x
-1848: 18       clc
-1849: 69 78    adc #$78
-184B: 95 57    sta $57, x
-184D: A9 02    lda #$02
-184F: 81 56    sta ($56, x)
-1851: CA       dex
-1852: CA       dex
-1853: 10 ED    bpl $1842
-1855: A9 0F    lda #$0f
-1857: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
-185A: A0 17    ldy #$17
-185C: A2 06    ldx #$06
-185E: B9 B5 1C lda $1cb5, y
-1861: 81 30    sta ($30, x)
-1863: 88       dey
-1864: CA       dex
-1865: CA       dex
-1866: 10 F6    bpl $185e
-1868: A2 14    ldx #$14
-186A: 20 42 17 jsr $1742        -- jump to $1742, load $9004 to A until zero, TV raster beam line; return until 9004 is zero
-186D: 8A       txa
-186E: 18       clc
-186F: 69 A5    adc #$a5
-1871: 85 1E    sta $1e
-1873: 98       tya
-1874: 65 1E    adc $1e
-1876: 8D 0D 90 sta $900d
-1879: CA       dex
-187A: 10 EE    bpl $186a
-187C: 98       tya
-187D: 10 DD    bpl $185c
-187F: A2 06    ldx #$06
-1881: A9 01    lda #$01
-1883: 81 56    sta ($56, x)
-1885: CA       dex
-1886: CA       dex
-1887: 10 F8    bpl $1881
-1889: A9 00    lda #$00
-188B: 8D 0D 90 sta $900d$69
-188E: A9 09    lda #$09
-1890: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
-1893: 60       rts
 
--- subroutine to play sounds
-1894: A4 68    ldy $68          -- $68 - current music that's to play
+-- subroutine: lander explode animation
+-- set color to red
+1840: A2 06    ldx #$06			-- load 06 to X, X = 06, 04, 02, 00
+1842: B5 30    lda $30, x		-- load 36, 34, 32, 30 area data to A, those are screen position of shifting ship (low byte)
+1844: 95 56    sta $56, x		-- store 36, 34, 32, 30 area data to 5c, 5a, 58, 56 area, ($56+x) are color address (low byte)
+1846: B5 31    lda $31, x		-- load 37, 35, 33, 31 area data to A, those are screen position of shifting ship (high memory byte -> 1e or 1f)
+1848: 18       clc				-- clear carry
+1849: 69 78    adc #$78			-- A += 78, change the screen address into screen color address
+184B: 95 57    sta $57, x		-- store the color address to 5d, 5b, 59, 57 area ($57+x) are color address (high byte)
+184D: A9 02    lda #$02			-- A = 02, red
+184F: 81 56    sta ($56, x)		-- store the read color into given color address
+1851: CA       dex				-- X--
+1852: CA       dex				-- X--
+1853: 10 ED    bpl $1842		-- if X is not zero, then go back to 1842, when we finish setting the four color address to red, continue
+-- set volume and update ship occupy area
+1855: A9 0F    lda #$0f			-- load 0f to A, 0f is the volume we want to play
+1857: 8D 0E 90 sta $900e        -- set the volume to 0f
+185A: A0 17    ldy #$17			-- load 17 into Y, 17 is the pointer of 1cb5 area
+185C: A2 06    ldx #$06			-- load 06 into X, X = 06, 04, 02, 00
+185E: B9 B5 1C lda $1cb5, y		-- load 
+1861: 81 30    sta ($30, x)		-- store into screen where the ship is -> (update ship occupy area) 
+1863: 88       dey				-- Y--
+1864: CA       dex				-- X--
+1865: CA       dex				-- X--
+1866: 10 F6    bpl $185e		-- if Y is not zero, then go back to 185E, when we finish updating the ship occupy area, continue
+-- play explosion sound (noise)
+1868: A2 14    ldx #$14			-- load 14 into X, X = 14, 12, 10, 0e, 0c, 0a, 08, 06, 04, 02, 00
+186A: 20 42 17 jsr $1742        -- jump to $1742, load $9004 to A until zero, TV raster beam line; return until 9004 is zero
+186D: 8A       txa				-- transfer A to X
+186E: 18       clc				-- clear carry
+186F: 69 A5    adc #$a5			-- A += A5, A = B9
+1871: 85 1E    sta $1e			-- store B9 to $1e
+1873: 98       tya				-- transfer A to Y
+1874: 65 1E    adc $1e			-- A += $1e
+1876: 8D 0D 90 sta $900d		-- store A to $900d, noise
+1879: CA       dex				-- X--
+187A: 10 EE    bpl $186a		-- if x is positive, then go back to 186A, when we finish setting the noise, continue 
+187C: 98       tya				-- transfer A to Y
+187D: 10 DD    bpl $185c		-- if Y is positive, then go back to 185C
+-- set color back to black
+187F: A2 06    ldx #$06			-- load 06 into X, X = 06, 04, 02, 00
+1881: A9 01    lda #$01			-- load 01 into A
+1883: 81 56    sta ($56, x)		-- store 01 into color address(where ship explode area)
+1885: CA       dex				-- X--
+1886: CA       dex				-- X--
+1887: 10 F8    bpl $1881		-- if X is positive, then go back to 1881, when we finish setting the color back to black, continue
+-- set volume back to 09 and no more noise sound!
+1889: A9 00    lda #$00			-- load 00 into A
+188B: 8D 0D 90 sta $900d		-- store 00 into $900d, noise
+188E: A9 09    lda #$09			-- load 09 into A
+1890: 8D 0E 90 sta $900e        -- set volume to 9, no noise played anymore
+1893: 60       rts				-- return
+
+-- subroutine: set sound to be played
+1894: A4 68    ldy $68          -- $68 - current music that's to be played
 1896: F0 58    beq $18f0        -- if 0 - no audio pointer, clear sound register 
-1898: 88       dey              -- change pointer to play next 
-1899: 98       tya              -- A = Y
+1898: 88       dey              -- change pointe to sound that be played next
+1899: 98       tya              -- A = Y 
 189A: 0A       asl a            -- A <<= 1
 189B: A8       tay              -- Y = A
-189C: A5 13    lda $13          -- load high frequency
-189E: D0 4D    bne $18ed        -- if not zero, then go to 18ed
--- play sounds
-18A0: 8D 0A 90 sta $900a        -- set low frequency
-18A3: 8D 0B 90 sta $900b        -- set medium frequency
-18A6: 8D 0C 90 sta $900c        -- set high frequency
-18A9: B9 60 00 lda $0060, y     -- pointer to music address
+189C: A5 13    lda $13          -- load the number of cycles the audio will be played 
+189E: D0 4D    bne $18ed        -- if not zero, then go to 18ed <-> keep playing high frequency sound
+18A0: 8D 0A 90 sta $900a        -- reset low frequency
+18A3: 8D 0B 90 sta $900b        -- reset medium frequency
+18A6: 8D 0C 90 sta $900c        -- reset high frequency
+18A9: B9 60 00 lda $0060, y     -- load new music
 18AC: 85 69    sta $69          -- store as current music to play 1
-18AE: B9 61 00 lda $0061, y     -- pointer to music address
+18AE: B9 61 00 lda $0061, y     -- load new music
 18B1: 85 6A    sta $6a          -- store as current music to play 2
-18B3: A4 12    ldy $12          -- Y = medium freuqnecy
-18B5: B1 69    lda ($69), y     -- switch audio pointer 
-18B7: F0 42    beq $18fb        -- if audio pointer is 0, clear audio
-18B9: 10 04    bpl $18bf        -- if greater than 0, select audio pointer
+18B3: A4 12    ldy $12          -- Y = the offset within the music address
+18B5: B1 69    lda ($69), y     -- load one byte from the current music address
+18B7: F0 42    beq $18fb        -- if the there is no music to be played in the current music track, clear music
+18B9: 10 04    bpl $18bf        -- if greater than 0
 18BB: A0 00    ldy #$00         -- Y = 00
-18BD: B1 69    lda ($69), y     -- set audio pointer  
-18BF: 85 13    sta $13          -- store back to high frequency
-18C1: C8       iny              -- Y +
+-- set the number of cycle the music will be played
+18BD: B1 69    lda ($69), y     -- load the beginning byte from the current music address <-> the number of cycles music played
+18BF: 85 13    sta $13          -- load new counter for the music that need to be played
+
+18C1: C8       iny              -- Y += 1
 18C2: B1 69    lda ($69), y     -- A = 
 18C4: 85 1E    sta $1e          -- $1e = 
-18C6: C8       iny              -- Y ++ 
-18C7: A9 01    lda #$01         --
-18C9: 25 1E    and $1e          --
+18C6: C8       iny              -- Y += 1 
+18C7: A9 01    lda #$01         -- A = 1 
+18C9: 25 1E    and $1e          -- 
 18CB: F0 06    beq $18d3        --
 18CD: B1 69    lda ($69), y     --
-18CF: 8D 0A 90 sta $900a        --
+18CF: 8D 0A 90 sta $900a        -- 
+ 
 18D2: C8       iny              --
 18D3: A9 02    lda #$02         --
 18D5: 25 1E    and $1e          --
 18D7: F0 06    beq $18df        --
 18D9: B1 69    lda ($69), y     --
 18DB: 8D 0B 90 sta $900b        --
+
 18DE: C8       iny              --
 18DF: A9 04    lda #$04         --
 18E1: 25 1E    and $1e          -- 
 18E3: F0 06    beq $18eb        --
 18E5: B1 69    lda ($69), y     --
 18E7: 8D 0C 90 sta $900c        --
-18EA: C8       iny              --
+
+18EA: C8       iny              -- 
 18EB: 84 12    sty $12          --
---
-18ED: C6 13    dec $13          --
-18EF: 60       rts              --
+-- play high frequency audio
+18ED: C6 13    dec $13          -- decrease the counter of music cycles 
+18EF: 60       rts              -- return 
 -- clear sound registers
 18F0: A9 00    lda #$00         -- load 0 to A
 18F2: 8D 0A 90 sta $900a        -- clear 900a   
@@ -1869,14 +1880,10 @@ FF    sta ($ff, x)
 1CB3: 0F 10 00 slo $0010
 1CB6: 00       brk
 1CB7: 00       brk
-
-
 1CB8: 00       brk
 1CB9: FD EE ED sbc $edee, x
 1CBC: F0 FE    beq $1cbc
 1CBE: FB FC 
-
-
 1cc0: EC isb $ecfc, y
 1CC1: CE CD CD dec $cdcd
 1CC4: CE D5 CA dec $cad5

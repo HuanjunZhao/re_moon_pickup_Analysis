@@ -96,8 +96,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
                                     -- set score board to zeros
 
 1065: 20 66 17 jsr $1766        -- jump to subroutine at $1766
-                                        -- set the colors for landers on the bottom right 
-
+                                        -- set the green colors for landers on the bottom right 
+-- prepare some variables
 1068: A9 02    lda #$02         -- A = 0x02  
 106A: 85 1B    sta $1b          -- $1b = A  
 106C: A9 00    lda #$00         -- A = 0x00  
@@ -762,37 +762,37 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1535: 85 1E    sta $1e			-- $1e = A
 1537: F0 09    beq $1542		-- branch equal zero
 1539: A2 00    ldx #$00			-- X = 0x00
-153B: 20 71 17 jsr $1771
-153E: C6 1E    dec $1e
-1540: D0 F7    bne $1539
-1542: AE 1B 1D ldx $1d1b
-1545: F0 03    beq $154a
-1547: 20 71 17 jsr $1771
+153B: 20 71 17 jsr $1771		-- calculate adding score, print score on screen
+153E: C6 1E    dec $1e			-- $1e -= 1
+1540: D0 F7    bne $1539		-- branch not equal zero
+1542: AE 1B 1D ldx $1d1b		-- load history high score into A
+1545: F0 03    beq $154a		-- branch equal zero
+1547: 20 71 17 jsr $1771		-- calculate adding score, print score on screen
 154A: A9 01    lda #$01         -- load 1 to A
 154C: 85 68    sta $68          -- $68 = 01, when play music, play 1b60 music, game started.
 154E: 20 1E EB jsr $eb1e        -- get keyboard input 
 1551: 20 42 17 jsr $1742        -- jump to $1742, load $9004 to A until zero, TV raster beam line
-1554: 20 94 18 jsr $1894        -- play sound
-1557: E6 11    inc $11
-1559: D0 0F    bne $156a
-155B: C6 6F    dec $6f
-155D: D0 0B    bne $156a
+1554: 20 94 18 jsr $1894        -- play sound~
+1557: E6 11    inc $11			-- $11 += 1
+1559: D0 0F    bne $156a		-- branch not equal zero
+155B: C6 6F    dec $6f			-- $6f -= 1, decresed with game start music music played
+155D: D0 0B    bne $156a		-- branch not equal zero
 155F: A9 00    lda #$00         -- load 0 to A
 1561: 85 68    sta $68          -- $68 = 00, when play music, play nothing, or prepare to play noise
-1563: A9 01    lda #$01
-1565: 85 5E    sta $5e
+1563: A9 01    lda #$01			-- load 1 to A
+1565: 85 5E    sta $5e			-- $5e = 01, when play music, play 1b60 music, game started.
 1567: 4C 2A 17 jmp $172a		-- jump to $172a, clear screen
-156A: A5 C5    lda $c5
-156C: C9 40    cmp #$40
-156E: F0 DA    beq $154a
-1570: 20 38 17 jsr $1738
+156A: A5 C5    lda $c5			-- load $c5 to A
+156C: C9 40    cmp #$40			-- compare A with $40
+156E: F0 DA    beq $154a		-- branch equal zero
+1570: 20 38 17 jsr $1738		-- jump to $1738
 1573: A9 00    lda #$00         -- load 0 to A
 1575: 85 68    sta $68          -- $68 = 00, when play music, play nothing, or prepare to play noise
-1577: A9 09    lda #$09
+1577: A9 09    lda #$09			-- load 9 to A
 1579: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
-157C: A5 11    lda $11
-157E: 85 10    sta $10
-1580: 4C 2A 17 jmp $172a		- jump to $172a, clear screen
+157C: A5 11    lda $11			-- load $11 to A
+157E: 85 10    sta $10			-- $10 = A
+1580: 4C 2A 17 jmp $172a		-- jump to $172a, clear screen
 
 --  subroutine: generate the map and put on colonists
 -- 1583-158B using value in $11 to generate X -> where should we start to draw the map(which left-est position on the screen) 
@@ -1131,17 +1131,14 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1763: 10 FA    bpl $175f        -- ... 
 1765: 60       rts              -- 
 
--- subroutine: set the colors for landers on the  bottom right 
-1766: A2 04    ldx #$04
-1768: A9 05    lda #$05
-176A: 81 26    sta ($26, x)
-                        -- $26|$27 -> 97f4
-                        -- 97f4 area: lives color
-                                1fe5, e7, e9 and 97e5, e7, e9
-176C: CA       dex
-176D: CA       dex
-176E: 10 F8    bpl $1768
-1770: 60       rts
+-- subroutine: set the green colors for landers on the  bottom right -> colonist alive!
+1766: A2 04    ldx #$04			-- X = 04, then X = 02, X = 00. Three index counters for three landers
+1768: A9 05    lda #$05			-- 05 is the green color of the landers
+176A: 81 26    sta ($26, x)		-- store the color to the address, 26, 27 is left lander live character set color pointer
+176C: CA       dex				-- X -= 1
+176D: CA       dex				-- X -= 1
+176E: 10 F8    bpl $1768		-- loop until X == 0
+1770: 60       rts				-- return
 
 -- subroutine: calculate the player scored, the score to be added is in X register originally. 1fed is screen socre related
 1771: A0 03    ldy #$03         -- Y = 03          
@@ -1190,12 +1187,12 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 17BB: 85 1E    sta $1e                  -- $1e = $2f == 0x00
 17BD: F0 09    beq $17c8                -- if result zero, then go to 17C8
 17BF: A2 00    ldx #$00                 -- X = 0x00
-17C1: 20 71 17 jsr $1771                -- add score
+17C1: 20 71 17 jsr $1771                -- calculate adding score, print score on screen
 17C4: C6 1E    dec $1e                  -- $1e is a counter
 17C6: D0 F7    bne $17bf                -- if not zero
 17C8: A6 2E    ldx $2e                  -- X = $2E -- $the current score
 17CA: F0 03    beq $17cf                -- if score is zero, then just return
-17CC: 20 71 17 jsr $1771                -- add score
+17CC: 20 71 17 jsr $1771                -- calculate adding score, print score on screen
 17CF: 60       rts                      -- return
 
 
@@ -1270,7 +1267,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1832: A9 00    lda #$00                 -- A = 00 ???
 1834: 65 2F    adc $2f                  -- A += $2f ??? so what is 2f
 1836: 85 2F    sta $2f                  -- store back to 2f ???
-1838: 20 71 17 jsr $1771                -- add score to the scoreboard
+1838: 20 71 17 jsr $1771                -- calculate adding score, print score on screen
 183B: A9 03    lda #$03                 -- load 03 to A
 183D: 85 68    sta $68                  -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
 183F: 60       rts

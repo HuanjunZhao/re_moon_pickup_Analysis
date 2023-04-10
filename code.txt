@@ -113,7 +113,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 107A: 20 94 18 jsr $1894        -- play sound according last set Y value in last loop													|
 107D: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line							|
 1080: 20 A9 14 jsr $14a9		-- update ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels						|
-1083: 20 DD 13 jsr $13dd		-- lander control logic																					|
+1083: 20 DD 13 jsr $13dd		-- game logic																					|
 1086: 20 00 19 jsr $1900		-- 1900: move orbital docking pad																		|						
 1089: 20 FB 17 jsr $17fb		-- 17fb: switch which colonist hands up																	|									
 108C: 20 C7 12 jsr $12c7        -- 12c7: get keyboard input and update lander 															|
@@ -408,9 +408,9 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 12C4: 4C 74 10 jmp $1074
 
 
--- subroutine ship control logic, calculate fuel and update fuel line
-12C7: A5 3A    lda $3a                  -- 
-12C9: 29 37    and #$37                 -- 37
+-- subroutine lander control logic, read input and control landercalculate fuel and update fuel line
+12C7: A5 3A    lda $3a                  -- load $3a to A, 3a is lander orientation + fuel or not:  0x: head left, 1x: head up, 2x: head right.      x7: power up, xf: no power
+12C9: 29 37    and #$37                 -- && 37, A = 3a & 37
 12CB: 85 3A    sta $3a                  -- A = $3a
 12CD: A9 00    lda #$00                 -- A = 00
 12CF: 8D 0D 90 sta $900d                -- noise 
@@ -565,13 +565,13 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 13DC: 60       rts
 
 
-- subroutine game logic part? TODO
-13DD: A5 41    lda $41
-13DF: 4A       lsr a
-13E0: 4A       lsr a
-13E1: 4A       lsr a
-13E2: C5 38    cmp $38
-13E4: 85 38    sta $38
+- subroutine game logic part?
+13DD: A5 41    lda $41			-- load 41 into a
+13DF: 4A       lsr a			-- A = A >> 1
+13E0: 4A       lsr a			-- A = A >> 1
+13E1: 4A       lsr a			-- A = A >> 1
+13E2: C5 38    cmp $38			-- compare A with 38, $38 is lander x position -> x coordinate in [0,14]
+13E4: 85 38    sta $38			-- store A into 38
 13E6: F0 1E    beq $1406
 13E8: 90 0E    bcc $13f8
 13EA: A2 06    ldx #$06
@@ -699,7 +699,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14AD: A0 1F    ldy #$1f			-- Y = 1F
 14AF: 81 30    sta ($30, x)		-- store 00 into shifting ship pixel area
 14B1: 99 08 1C sta $1c08, y		-- store a in 1c08, y position	<-------|
-14B4: 88       dey				-- Y -- 								|
+14B4: 88       dey				-- Y -- 		        				|
 14B5: CA       dex				-- X --									|
 14B6: CA       dex				-- X -- 								|
 14B7: 10 F6    bpl $14af						------------------------|
@@ -1454,29 +1454,29 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 196F: 60       rts						-- return
 
 
--- subroutine
+-- subroutine play demo if we enter nothing.
 1970: 20 1E EB jsr $eb1e                -- read a character from keyboard
 1973: A5 C5    lda $c5                  -- A = $c5, c5 is character pressed 
 1975: C9 40    cmp #$40                 -- compare A with 40, 40 is no key pressed
-1977: F0 07    beq $1980                -- goto 1980 if no key pressed
-1979: A9 00    lda #$00                 -- A = 00
-197B: 85 5E    sta $5e                  -- 
-197D: 4C 4B 10 jmp $104b                -- 
--- no key pressed
-1980: A5 6D    lda $6d                  -- 
-1982: D0 12    bne $1996                -- not equal, to 1996
-1984: E6 6E    inc $6e                  -- 
-1986: A6 6E    ldx $6e                  -- 
-1988: BD 20 1D lda $1d20, x             -- 
-198B: 85 6D    sta $6d                  -- 
-198D: E8       inx                      -- 
-198E: BD 20 1D lda $1d20, x             -- 
-1991: 86 6E    stx $6e                  -- 
-1993: 4C DE 12 jmp $12de                -- 
-1996: C6 6D    dec $6d                  -- 
-1998: A6 6E    ldx $6e                  -- 
-199A: BD 20 1D lda $1d20, x             -- 
-199D: 4C DE 12 jmp $12de                -- 
+1977: F0 07    beq $1980                -- goto 1980 if no key pressed, play the demo
+1979: A9 00    lda #$00                 -- if any key is pressed, A = 00
+197B: 85 5E    sta $5e                  -- clear 5e -> the demo counter
+197D: 4C 4B 10 jmp $104b                -- game reload
+-- no key pressed, play the demo 
+1980: A5 6D    lda $6d                  -- load 6d into A, 6d counter for how long this opreation last
+1982: D0 12    bne $1996                -- if 6d is not zero, goto 1996
+1984: E6 6E    inc $6e                  -- 6e++
+1986: A6 6E    ldx $6e                  -- load 6e into X, 6e is index counter for reading demo operation in 1d20 area
+1988: BD 20 1D lda $1d20, x             -- load 1d20 + X into A, how long should we run this opreation
+198B: 85 6D    sta $6d                  -- store A to 6d, 6d counter for how long this opreation last
+198D: E8       inx                      -- X++
+198E: BD 20 1D lda $1d20, x             -- load 1d20 + X into A, now is the opreation code
+1991: 86 6E    stx $6e                  -- store X to 6e, 6e is index counter for reading demo operation in 1d20 area
+1993: 4C DE 12 jmp $12de                -- instead reading input from c5, load the pre-built lander control data from 1d20
+1996: C6 6D    dec $6d                  -- 6d --
+1998: A6 6E    ldx $6e                  -- load 6e into X
+199A: BD 20 1D lda $1d20, x             -- instead reading input from c5, load the pre-built lander control data from 1d20
+199D: 4C DE 12 jmp $12de                -- instead reading input from c5, load the pre-built lander control data from 1d20
 
 
 
@@ -1949,6 +1949,8 @@ FF    sta ($ff, x)
 1D1D: 00       brk              -- first character of the user name
 1D1E: 00       brk              -- second character of the user name
 1D1F: 00       brk              -- third charactter of the user name
+
+-- demo data -> control ship data storage area
 1D20: 00       brk
 1D21: 02       kil
 1D22: 20 01 11 jsr $1101

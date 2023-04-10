@@ -349,79 +349,84 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1231: 4C 96 10 jmp $1096		-- jump to 1096, user can still control the lander
 1234: 4C 64 11 jmp $1164		-- jump to 1164, update colonist status
 
--- situation: lander reattach to orbital docking pad (no sure if is safe landing)
-1237: A5 3A    lda $3a
-1239: 29 10    and #$10
-123B: F0 F7    beq $1234
-123D: A5 47    lda $47                  -- if the lander is safe to be attached back to orbital docking pad
-123F: C9 FF    cmp #$ff                 
-1241: D0 F1    bne $1234
-1243: A5 45    lda $45
-1245: D0 ED    bne $1234
-1247: 8D 0D 90 sta $900d
-124A: 85 1D    sta $1d
-124C: A9 00    lda #$00
-124E: 85 1E    sta $1e
-1250: A0 02    ldy #$02
-1252: B9 18 00 lda $0018, y
-1255: C9 01    cmp #$01
-1257: D0 12    bne $126b
-1259: A9 32    lda #$32
-125B: 18       clc
-125C: 65 1E    adc $1e
-125E: 85 1E    sta $1e
-1260: 18       clc
-1261: 65 2E    adc $2e
-1263: 85 2E    sta $2e
-1265: A9 00    lda #$00
-1267: 65 2F    adc $2f
-1269: 85 2F    sta $2f                  -- add store 50: when reach to orbital docking pad
-126B: 88       dey                      -- Y --
-126C: 10 E4    bpl $1252                --
-126E: A5 1E    lda $1e                  --      
-1270: C9 96    cmp #$96                 --
-1272: D0 1E    bne $1292                --
-1274: 06 1C    asl $1c                  -- 
-1276: E6 1C    inc $1c                  -- 
-1278: A9 32    lda #$32                 --
-127A: 38       sec                      --
-127B: E5 1C    sbc $1c                  --
-127D: 85 2D    sta $2d                  --
-127F: A5 4E    lda $4e                  -- fuel line
-1281: 38       sec
-1282: E9 CE    sbc #$ce        
-1284: 0A       asl a
-1285: 0A       asl a
-1286: 0A       asl a
-1287: 18       clc
-1288: 65 2E    adc $2e
-128A: 85 2E    sta $2e
-128C: A9 00    lda #$00
-128E: 65 2F    adc $2f
-1290: 85 2F    sta $2f
-1292: E6 43    inc $43
-1294: A9 80    lda #$80
-1296: 85 44    sta $44
-1298: A9 01    lda #$01
-129A: 85 3B    sta $3b
-129C: A9 00    lda #$00
-129E: 85 46    sta $46
-12A0: 85 47    sta $47
-12A2: A5 3A    lda $3a
-12A4: 29 37    and #$37
-12A6: 85 3A    sta $3a
-12A8: A9 03    lda #$03                 -- load 03 to A
-12AA: 85 68    sta $68                  -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
-12AC: 20 A9 14 jsr $14a9
-12AF: 20 DD 13 jsr $13dd
-12B2: 20 00 19 jsr $1900			
-12B5: 20 62 13 jsr $1362
-12B8: 20 94 18 jsr $1894			-- audio 3 pointer, point to the address where docking success or picking up colonist success music address
-12BB: 20 42 17 jsr $1742            -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
-12BE: A5 41    lda $41
-12C0: C9 A7    cmp #$a7
-12C2: 90 E8    bcc $12ac
-12C4: 4C 74 10 jmp $1074
+-- situation: lander reach to orbital docking pad
+1237: A5 3A    lda $3a			-- load 3a to A, lander orientation + fuel or not
+								-- 0x: head left, 1x: head up, 2x: head right, x7: power up, xf: no power
+1239: 29 10    and #$10			-- and 3a with 10
+123B: F0 F7    beq $1234		-- if is 00, jump to 1234, update colonist status
+123D: A5 47    lda $47          -- load lander vertical acceleration indicator, when hit safe area 00 is safe, else lander in danger
+123F: C9 FF    cmp #$ff         -- compare with FF, when go up, vertical acceleration smaller than ff.
+1241: D0 F1    bne $1234		-- if 47 is not ff, docking speed too fast, jump to 1234, update colonist status
+1243: A5 45    lda $45			-- load 45 to A, lander horizontal acceleration indicator
+1245: D0 ED    bne $1234		-- docking speed too fast, jump to 1234, update colonist status
+1247: 8D 0D 90 sta $900d		-- store a into noise
+124A: 85 1D    sta $1d			-- store A into 1d, 1d is lander destoryed indicator
+124C: A9 00    lda #$00			-- load 00 into A
+124E: 85 1E    sta $1e			-- store 00 into 1e for calculation
+1250: A0 02    ldy #$02			-- load 02 into Y, Y is used for counter
+1252: B9 18 00 lda $0018, y		-- load one colonist status from $18 area
+1255: C9 01    cmp #$01			-- compare with 01, 01 means in lander
+1257: D0 12    bne $126b		-- if the current colonist in lander, do nothing, jump to 126b
+1259: A9 32    lda #$32			-- load 32 into A, 32 is max fuel
+125B: 18       clc				-- clear carry
+-- score gained by docking with colonist
+125C: 65 1E    adc $1e			-- add 1e to A, 
+125E: 85 1E    sta $1e			-- store back to 1e
+1260: 18       clc				-- clear carry
+1261: 65 2E    adc $2e			-- add 2e to A
+1263: 85 2E    sta $2e			-- store back to 2e
+1265: A9 00    lda #$00			-- load 00 into A
+1267: 65 2F    adc $2f			-- add 2f to A
+1269: 85 2F    sta $2f			-- add score: when carry one colonist reach to orbital docking pad
+126B: 88       dey          	-- Y --
+126C: 10 E4    bpl $1252     	-- check next colonist
+-- finish checking all colonists
+-- not 100% sure code below
+126E: A5 1E    lda $1e        	-- load 1e to A     
+1270: C9 96    cmp #$96      	-- compare with 96
+1272: D0 1E    bne $1292   		-- if not 96, jump to 1292
+1274: 06 1C    asl $1c        	-- $1c = $1c * 2
+1276: E6 1C    inc $1c			-- $1c = $1c + 1
+1278: A9 32    lda #$32	        -- load 32 into A, max fuel per slot
+127A: 38       sec      		-- set carry
+127B: E5 1C    sbc $1c          -- subtract Memory from Accumulator with Barrow
+127D: 85 2D    sta $2d          -- store A into 2d
+127F: A5 4E    lda $4e			-- fuel line
+1281: 38       sec				-- set carry
+1282: E9 CE    sbc #$ce        	-- subtract CE from A
+1284: 0A       asl a			-- shift left
+1285: 0A       asl a			-- shift left
+1286: 0A       asl a			-- shift left
+1287: 18       clc				-- clear carry
+1288: 65 2E    adc $2e			-- add 2e to A, add score
+128A: 85 2E    sta $2e			-- store back to 2e, add score
+128C: A9 00    lda #$00			-- load 00 into A
+128E: 65 2F    adc $2f			-- add 2f to A, add score
+1290: 85 2F    sta $2f			-- store back to 2f, add score
+1292: E6 43    inc $43			-- $43 = $43 + 1
+1294: A9 80    lda #$80			-- load 80 into A
+1296: 85 44    sta $44			-- store 80 into $44
+1298: A9 01    lda #$01			-- load 01 into A
+129A: 85 3B    sta $3b			-- store 01 into $3b
+129C: A9 00    lda #$00			-- load 00 into A
+129E: 85 46    sta $46			-- store 00 into $46
+12A0: 85 47    sta $47			-- store 00 into $47, clear vertical acceleration indicator
+12A2: A5 3A    lda $3a			-- load 3a to A, lander orientation + fuel or not:
+12A4: 29 37    and #$37			-- and 37, 37 is 00110111,
+12A6: 85 3A    sta $3a			-- store back to 3a
+-- docking success, we can play music now
+12A8: A9 03    lda #$03         -- load 03 to A, docking success
+12AA: 85 68    sta $68			-- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
+12AC: 20 A9 14 jsr $14a9		-- load the shift ship we just calculate on screen
+12AF: 20 DD 13 jsr $13dd		-- chcek game logic
+12B2: 20 00 19 jsr $1900		-- move docking pad		
+12B5: 20 62 13 jsr $1362		-- move the lander
+12B8: 20 94 18 jsr $1894		-- audio 3 pointer, point to the address where docking success or picking up colonist success music address
+12BB: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
+12BE: A5 41    lda $41			-- load 41 to A, 41 is lander horizontal position
+12C0: C9 A7    cmp #$a7			-- compare with A7, A7 is right side of the screen
+12C2: 90 E8    bcc $12ac		-- if less than A7, jump to 12ac, let docking pad carry lander to move to the right
+12C4: 4C 74 10 jmp $1074		-- if we reach the right of the screen, jump to 1074, we jump to another map!
 
 
 -- subroutine lander control logic, read input and control landercalculate fuel and update fuel line
@@ -517,7 +522,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 -- 
 1368: A5 48    lda $48                  -- $48 = 
 136A: 65 44    adc $44                  -- $44 += $48
-136C: 85 44    sta $44                  -- $44 = 
+136C: 85 44    sta $44                  -- $44 = 80, when space is entered
 -- 
 136E: A5 49    lda $49                  -- 
 1370: 65 45    adc $45                  -- 
@@ -579,7 +584,6 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 13D8: 85 45    sta $45
 13DA: F0 C5    beq $13a1
 13DC: 60       rts
-
 
 
 - subroutine game logic part?
@@ -1954,21 +1958,22 @@ FF    sta ($ff, x)
 1CF4: 1D	   ora    
 
 -- 40 - 4F
-1CF5: 00 10    $1000, x                 -- 
-1CF7: 00       brk
-1CF8: 10 80    bpl $1c7a
-1CFA: 00       brk
-1CFB: 00       brk
-1CFC: 00       brk
-1CFD: 00       brk
-1CFE: 00       brk
-1CFF: EF FF 00 isb $00ff
-
-
-
-1D02: 00       brk
-1D03: E3 1F    isb ($1f, x)
-
+1CF5: 00                        -- 40,
+1CF6: 10                        -- 41, speed on x axis
+1CF7: 00       brk              -- 42,
+1CF8: 10                        -- 43,
+1CF9: 80                        -- 44,
+1CFA: 00       brk              -- 45, lander horizontal acceleration indicator
+1CFB: 00       brk              -- 46, 
+1CFC: 00       brk              -- 47, lander vertical acceleration indicator
+1CFD: 00       brk              -- 48, F9-left, 00-straight up, 07-right
+1CFE: 00       brk              -- 49, FF-left, 00-straight up, 00-right
+1CFF: EF FF 00 isb $00ff        -- 4A, 
+                                -- 4B, 
+                                -- 4C, 
+1D02: 00       brk              -- 4D, 
+1D03: E3 1F    isb ($1f, x)     -- 4E, 
+                                -- 4F, 
 
 1D05: 87 81    sax $81          -- G, A
 1D07: 8D 85 A0 sta $a085        -- M, E, " "

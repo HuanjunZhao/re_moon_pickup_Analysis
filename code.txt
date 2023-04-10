@@ -239,7 +239,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 116A: 81 26    sta ($26, x)		-- lander live character set color pointer
 116C: A9 00    lda #$00			-- load 0 into A
 116E: 85 1D    sta $1d			-- store 0 into 1D
-1170: 20 40 18 jsr $1840		-- jump to subroutine $1840, draw lander status
+1170: 20 40 18 jsr $1840		-- jump to subroutine $1840, deal with lander explode
 1173: A5 5E    lda $5e
 1175: F0 03    beq $117a
 1177: 4C 4B 10 jmp $104b
@@ -307,7 +307,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 11F7: 85 46    sta $46
 11F9: 85 47    sta $47
 11FB: C6 43    dec $43
-11FD: 20 14 18 jsr $1814
+11FD: 20 14 18 jsr $1814 			  -- try to picked up the colonist
 1200: A2 02    ldx #$02
 1202: A0 00    ldy #$00
 1204: B5 30    lda $30, x
@@ -1260,30 +1260,32 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1813: 60       rts			-- return
 
 
-
-1814: A6 1F    ldx $1f
-1816: B5 18    lda $18, x
-1818: D0 25    bne $183f
-181A: A9 01    lda #$01
-181C: 95 18    sta $18, x
-181E: 06 1F    asl $1f
-1820: A6 1F    ldx $1f
-1822: A9 00    lda #$00
-1824: 81 50    sta ($50, x)
-1826: A9 07    lda #$07
-1828: 81 20    sta ($20, x)
-182A: 18       clc
-182B: A9 05    lda #$05                 -- 05 - picking up colonist
-182D: AA       tax                      -- X = A = 05
-182E: 65 2E    adc $2e                  -- A += $2e, calculate new score
-1830: 85 2E    sta $2e                  -- store new score back to $20
-1832: A9 00    lda #$00                 -- A = 00 ???
-1834: 65 2F    adc $2f                  -- A += $2f ??? so what is 2f
-1836: 85 2F    sta $2f                  -- store back to 2f ???
-1838: 20 71 17 jsr $1771                -- calculate adding score, print score on screen
-183B: A9 03    lda #$03                 -- load 03 to A
-183D: 85 68    sta $68                  -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
-183F: 60       rts
+-- subroutine: colonist picked up event
+-- clear the colonist from the screen, set yellow.
+1814: A6 1F    ldx $1f			-- X = 1F, 1F is the index of the current colonist
+1816: B5 18    lda $18, x		-- A = $18, $18 is the status of the current colonist
+1818: D0 25    bne $183f		-- if not zero, means weather in lander or dead, no action needed, return
+181A: A9 01    lda #$01			-- A = 01, 01 means colonist is in lander
+181C: 95 18    sta $18, x		-- set the status of the current colonist to 01
+181E: 06 1F    asl $1f			-- 1F = 1F << 1, 1F is the index of the current colonist
+1820: A6 1F    ldx $1f			-- load 1f into A
+1822: A9 00    lda #$00			-- A = 00
+1824: 81 50    sta ($50, x) 	-- clear the colonist on the screen
+1826: A9 07    lda #$07			-- A = 07, yellow
+1828: 81 20    sta ($20, x) 	-- put yellow on the screen, indicated the colonist is in the lander
+182A: 18       clc				-- clear carry
+-- calculate score
+182B: A9 05    lda #$05			-- 05 is the score for picking up a colonist
+182D: AA       tax				-- X = A = 05
+182E: 65 2E    adc $2e        	-- A += $2e, calculate new score
+1830: 85 2E    sta $2e      	-- store new score back to $2e
+1832: A9 00    lda #$00     	-- A = 00
+1834: 65 2F    adc $2f          -- A += $2f
+1836: 85 2F    sta $2f     		-- store score back to 2f
+1838: 20 71 17 jsr $1771     	-- calculate adding score, print score on screen
+183B: A9 03    lda #$03        	-- load 03 to A
+183D: 85 68    sta $68          -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
+183F: 60       rts				-- return
 
 -- subroutine: lander explode animation
 -- set color to red
@@ -1362,33 +1364,32 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 -- set the number of cycle the music will be played
 18BD: B1 69    lda ($69), y     -- load the beginning byte from the current music address <-> the number of cycles music played
 18BF: 85 13    sta $13          -- load new counter for the music that need to be played
-
+-- set low frequency
 18C1: C8       iny              -- Y += 1
-18C2: B1 69    lda ($69), y     -- A = 
-18C4: 85 1E    sta $1e          -- $1e = 
+18C2: B1 69    lda ($69), y     -- load mask to check  data frequency
+18C4: 85 1E    sta $1e          -- store mask that checks data frequency
 18C6: C8       iny              -- Y += 1 
-18C7: A9 01    lda #$01         -- A = 1 
-18C9: 25 1E    and $1e          -- 
-18CB: F0 06    beq $18d3        --
-18CD: B1 69    lda ($69), y     --
-18CF: 8D 0A 90 sta $900a        -- 
- 
-18D2: C8       iny              --
-18D3: A9 02    lda #$02         --
-18D5: 25 1E    and $1e          --
-18D7: F0 06    beq $18df        --
-18D9: B1 69    lda ($69), y     --
-18DB: 8D 0B 90 sta $900b        --
-
-18DE: C8       iny              --
-18DF: A9 04    lda #$04         --
-18E1: 25 1E    and $1e          -- 
-18E3: F0 06    beq $18eb        --
-18E5: B1 69    lda ($69), y     --
-18E7: 8D 0C 90 sta $900c        --
-
-18EA: C8       iny              -- 
-18EB: 84 12    sty $12          --
+18C7: A9 01    lda #$01         -- skip non low frequency data
+18C9: 25 1E    and $1e          -- .
+18CB: F0 06    beq $18d3        -- .
+18CD: B1 69    lda ($69), y     -- load low frequency music data
+18CF: 8D 0A 90 sta $900a        -- set low frequency music data
+-- set medium frequency
+18D2: C8       iny              -- 
+18D3: A9 02    lda #$02         -- skip non high frequency data
+18D5: 25 1E    and $1e          -- .
+18D7: F0 06    beq $18df        -- .
+18D9: B1 69    lda ($69), y     -- load medium frequency music data
+18DB: 8D 0B 90 sta $900b        -- set medium frequency music data
+-- set high frequency 
+18DE: C8       iny              -- 
+18DF: A9 04    lda #$04         -- skip non high frequency data
+18E1: 25 1E    and $1e          -- .
+18E3: F0 06    beq $18eb        -- .
+18E5: B1 69    lda ($69), y     -- load high frequency music data
+18E7: 8D 0C 90 sta $900c        -- set high frequency music data
+18EA: C8       iny              -- Y++ 
+18EB: 84 12    sty $12          -- increase music data pointer 
 -- play high frequency audio
 18ED: C6 13    dec $13          -- decrease the counter of music cycles 
 18EF: 60       rts              -- return 
@@ -1399,13 +1400,13 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 18F8: 8D 0C 90 sta $900c        -- clear 900c
 18FB: 85 68    sta $68          -- clear 68 -> audio pointer
 18FD: 85 12    sta $12          -- clear 12
-18FF: 60       rts
+18FF: 60       rts				-- return
 
 
 -- subroutine: move orbital docking pad
-1900: A5 4D    lda $4d                  
-1902: 29 01    and #$01
-1904: D0 55    bne $195b
+1900: A5 4D    lda $4d                  --  
+1902: 29 01    and #$01                 -- 
+1904: D0 55    bne $195b                -- 
 1906: A5 3E    lda $3e
 1908: C9 2F    cmp #$2f
 190A: D0 08    bne $1914

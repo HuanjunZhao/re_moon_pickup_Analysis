@@ -17,7 +17,7 @@ F8 fuel line
 3A: lander orientation + fuel or not
 4A: F1 - lander left or right, EF - lander straight
 46: 
-47: FD, FE - explode when collide to orbital docking pad, FF - reach to orbital docking pad, 00 - safe to land, 01, 02 - crash on landing 
+47: FD, FE - explode when collide to orbital docking pad, FF - reattach to orbital docking pad, 00 - safe to land, 01, 02 - crash on landing 
 48: F9 - left, 00 - straight up, 07 right
 49: FF - left, 00 - straight up, 00 right
 
@@ -110,16 +110,16 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1077: 20 D0 17 jsr $17d0        -- game initialization
 
 -- main game loop 	--------------------------------------------------------------------------------------------------------------------|
-107A: 20 94 18 jsr $1894        -- play sound according last set Y value in last loop													|
+107A: 20 94 18 jsr $1894        -- play game start music																							|
 107D: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line							|
-1080: 20 A9 14 jsr $14a9		-- update ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels						|
-1083: 20 DD 13 jsr $13dd		-- game logic																							|
+1080: 20 A9 14 jsr $14a9		--  update ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels					|
+1083: 20 DD 13 jsr $13dd		--  lander control logic																				|
 1086: 20 00 19 jsr $1900		-- 1900: move orbital docking pad																		|						
 1089: 20 FB 17 jsr $17fb		-- 17fb: switch which colonist hands up																	|									
 108C: 20 C7 12 jsr $12c7        -- 12c7: get keyboard input and update lander 															|
 108F: A5 1D    lda $1d          -- check if lander exploded, lander destory indicator, 00 means lander good, 80 means lander dead.		|
 1091: F0 03    beq $1096        -- if 00, lander good, jump to 1096																		|						
-1093: 4C BD 11 jmp $11bd        -- if not 00, something happened. check lander status, and trigger corresponding events					|
+1093: 4C BD 11 jmp $11bd        -- check lander status, and trigger corresponding events												|
 1096: 20 62 13 jsr $1362        -- user can still use this subroutine to control lander													|
 1099: 4C 7A 10 jmp $107a        -- end of game event loop	----------------------------------------------------------------------------|
 
@@ -131,313 +131,278 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 
 10A4: A0 00    ldy #$00			-- load 00 to Y
 10A6: 8C 0D 90 sty $900d		-- 900d = 00, Frequency of noise source
-10A9: B9 05 1D lda $1d05, y		-- game over prompt storage area -> 1d05
+10A9: B9 05 1D lda $1d05, y		-- game over prompt storage area.	
 10AC: F0 05    beq $10b3		-- if we load 00 from storage, means first line "GAME OVER!" is printed, jump to 10b3
 10AE: 91 14    sta ($14), y		-- store the prompt character to given screen address 
-10B0: C8       iny				-- Y++
+10B0: C8       iny			-- Y++
 10B1: D0 F6    bne $10a9		-- jump to 10a9 and print next character on screen
-10B3: 20 38 17 jsr $1738        -- jump to subroutine at $1738: scan the keyboard, return upon no key is pressed
-10B6: A9 05    lda #$05         -- load 05 to A
-10B8: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
-10BB: A9 02    lda #$02         -- load pointer 02 to A
-10BD: 85 68    sta $68          -- $68 = 02, when play music, play 1bb0 music which is game end music
--- compare the current score with history highest score, if current higher, update the history highest score
-10BF: A5 2F    lda $2f			-- load current score high memory to A, 2f: current score high memory-> 0x??00
-10C1: CD 1C 1D cmp $1d1c		-- compare current score high memory with history highest score high memory
-10C4: 90 6A    bcc $1130		-- if current score high memory < history highest score high memory, jump to 1130
-10C6: F0 61    beq $1129		-- if current score high memory = history highest score high memory, jump to 1129
-10C8: A5 2E    lda $2e			-- jump from 112e, load 2e: current score low memory-> 0x00??
-10CA: 8D 1B 1D sta $1d1b		-- update history highest score low memory
-10CD: A5 2F    lda $2f			-- load current score high memory to A, 2f: current score high memory-> 0x??00
-10CF: 8D 1C 1D sta $1d1c		-- update history highest score high memory
+10B3: 20 38 17 jsr $1738                -- jump to subroutine at $1738: scan the keyboard, return upon no key is pressed
+10B6: A9 05    lda #$05                 -- load 05 to A
+10B8: 8D 0E 90 sta $900e                -- bit 0-3 are volume, 4-7 are auxiliary color
+10BB: A9 02    lda #$02                 -- load pointer 02 to A
+10BD: 85 68    sta $68                  -- $68 = 02, when play music, play 1bb0 music, game end
 
--- "high score" 14+15 = 1eb6, 1eb6 is the screen address of "high score" prompt
-10D2: A9 1E    lda #$1e			-- load 1e
-10D4: 85 15    sta $15			-- store 1e into $15
-10D6: A9 B6    lda #$b6			-- load b6
-10D8: 85 14    sta $14			-- store b6 into $14, 14+15 = 1eb6, 1eb6 is the screen address of "high score" prompt
-10DA: A0 00    ldy #$00			-- load 00 to Y
-10DC: B9 10 1D lda $1d10, y		-- load "high score" prompt from storage area -> 1d10
-10DF: F0 05    beq $10e6		-- if we load 00 from storage, means "high score" is printed, jump to 10e6
-10E1: 91 14    sta ($14), y		-- store the prompt character to given screen address
-10E3: C8       iny				-- Y++
-10E4: D0 F6    bne $10dc		-- jump to 10dc and print next character on screen
-
--- user name prompt input 14+15 = 1ee4, 1ee4 is the screen address of user name input
-	-- print prompt square at 1ee8, 1ee6, 1ee4, space at 1ee7, 1ee5, 1ee3
-10E6: A9 E4    lda #$e4			-- load e4
-10E8: 85 14    sta $14			-- store e4 into $14, since $15 is not changing, $(14+15) = 1ee4, 1ee4 is the screen address of user name input
-10EA: A0 04    ldy #$04			-- counter = 4 
-10EC: A9 E6    lda #$e6			-- load prompt square
-10EE: 91 14    sta ($14), y		-- store the prompt at 1ee8, 1ee6, 1ee4
-10F0: 88       dey				-- counter --
-10F1: A9 00    lda #$00			-- load void -> empty space
-10F3: 91 14    sta ($14), y	 	-- store at space at 1ee7, 1ee5, 1ee3
-10F5: 88       dey				-- counter --
-10F6: 10 F4    bpl $10ec		-- if counter > 0, jump to 10ec: print three times
-
--- deal with user name input
-10F8: A9 00    lda #$00			-- A = 00 
-10FA: 85 6B    sta $6b			-- $6b = 0
-10FC: 85 6C    sta $6c			-- $6c = 0, 6c is the counter of user name input. first char 00, second char 02, last char 04
-10FE: A9 E4    lda #$e4			-- load e4 into a
-1100: A4 6C    ldy $6c			-- load $6c to Y, 6c is the counter of user name input
-1102: 91 14    sta ($14), y		-- replace mass square with _ , indicated which char index should user enter next
-1104: 20 54 11 jsr $1154		-- jump to subroutine at $1154: get one char keyboard input for user name
-1107: A4 C5    ldy $c5			-- load $c5 to Y, $c5  what user just input
--- In $ec5e, there exist a mapping table, which map the keyboard input.
--- when we can the user input from keyboard, we get the corresponding number, if we add this number with ec5e, we can get the corresponding character
--- notice that, eor can make the character in range 81-9a
-1109: B9 5E EC lda $ec5e, y		-- load the corresponding character from mapping table 
-110C: 49 C0    eor #$c0			-- Exclusive OR 11000000, make the character useable (in range 81-9a)
-110E: A4 6C    ldy $6c          -- load $6c to Y, 6c is the counter of user name input
-1110: 91 14    sta ($14), y		-- store first character of the user on the screen 
-1112: A6 6B    ldx $6b			-- load $6b to X, 6b is name char counter
-1114: 9D 1D 1D sta $1d1d, x		-- store characters of the user name
-1117: 20 38 17 jsr $1738		-- get keyboard ready
-111A: E6 6C    inc $6c			-- 6c++
-111C: E6 6C    inc $6c			-- 6c++, ready for the next user name char
-111E: E6 6B    inc $6b			-- 6b++, 
-1120: A5 6B    lda $6b			-- load $6b to A, 6b is name char counter
-1122: C9 03    cmp #$03			-- if 6b < 3, means we have not got enough characters of the user name
-1124: D0 D8    bne $10fe		-- jump to 10fe: get next character of the user name
-1126: 4C 4B 10 jmp $104b		-- jump to 104b: game beginning
-
--- compare current score low memory with history highest score low memory
-1129: A5 2E    lda $2e			-- load 2e, 2e: current score low memory-> 0x00??
-112B: CD 1B 1D cmp $1d1b		-- compare current score low memory with history highest score low memory
-112E: B0 98    bcs $10c8		-- if current score low memory >= history highest score low memory, jump to 10c8
-
-1130: A9 05    lda #$05			-- load 05 into A
-1132: 85 6F    sta $6f			-- store 05 into $6f, 6f is the counter, when 6f == 0, play demo
+-- com
+10BF: A5 2F    lda $2f
+10C1: CD 1C 1D cmp $1d1c
+10C4: 90 6A    bcc $1130
+10C6: F0 61    beq $1129
+10C8: A5 2E    lda $2e
+10CA: 8D 1B 1D sta $1d1b
+10CD: A5 2F    lda $2f
+10CF: 8D 1C 1D sta $1d1c
+10D2: A9 1E    lda #$1e
+10D4: 85 15    sta $15
+10D6: A9 B6    lda #$b6
+10D8: 85 14    sta $14
+10DA: A0 00    ldy #$00
+10DC: B9 10 1D lda $1d10, y
+10DF: F0 05    beq $10e6
+10E1: 91 14    sta ($14), y
+10E3: C8       iny
+10E4: D0 F6    bne $10dc
+10E6: A9 E4    lda #$e4
+10E8: 85 14    sta $14
+10EA: A0 04    ldy #$04
+10EC: A9 E6    lda #$e6
+10EE: 91 14    sta ($14), y
+10F0: 88       dey
+10F1: A9 00    lda #$00
+10F3: 91 14    sta ($14), y
+10F5: 88       dey
+10F6: 10 F4    bpl $10ec
+10F8: A9 00    lda #$00
+10FA: 85 6B    sta $6b
+10FC: 85 6C    sta $6c
+10FE: A9 E4    lda #$e4
+1100: A4 6C    ldy $6c
+1102: 91 14    sta ($14), y                 -- replace # with _ for the user name input
+1104: 20 54 11 jsr $1154
+1107: A4 C5    ldy $c5
+1109: B9 5E EC lda $ec5e, y                 -- 
+110C: 49 C0    eor #$c0                     -- Exclusive OR 0C 
+110E: A4 6C    ldy $6c                      -- 
+1110: 91 14    sta ($14), y                 -- store first character of the user on the screen 
+1112: A6 6B    ldx $6b
+1114: 9D 1D 1D sta $1d1d, x                 -- store characters of the user name
+1117: 20 38 17 jsr $1738                    -- get keyboard ready
+111A: E6 6C    inc $6c
+111C: E6 6C    inc $6c
+111E: E6 6B    inc $6b
+1120: A5 6B    lda $6b
+1122: C9 03    cmp #$03
+1124: D0 D8    bne $10fe
+1126: 4C 4B 10 jmp $104b
+1129: A5 2E    lda $2e
+112B: CD 1B 1D cmp $1d1b
+112E: B0 98    bcs $10c8
+1130: A9 05    lda #$05
+1132: 85 6F    sta $6f
 1134: 20 1E EB jsr $eb1e        -- get keyboard input
 1137: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
-113A: 20 94 18 jsr $1894        -- play end game music <-> $68 = 02, triggered when the users do not break the history highest score
-113D: E6 11    inc $11          -- low frequency sound ++
-113F: D0 07    bne $1148		-- if $11 != 0, jump to 1148
-1141: C6 6F    dec $6f			-- 6f--
-1143: D0 03    bne $1148		-- if 6f != 0, jump to 1148
-1145: 4C 4B 10 jmp $104b		-- if 6f == 0, jump to 104b: game beginning
-1148: A5 C5    lda $c5          -- lda $c5, $c5: keyboard input
-114A: C9 40    cmp #$40			-- compare $c5 with 40, 40 is nothing entered
-114C: F0 E6    beq $1134		-- if no input, jump to 1134: get keyboard input again
-114E: 20 38 17 jsr $1738		-- if we do have input, game started!!
-1151: 4C 4B 10 jmp $104b		-- jump to 104b: game beginning
+113A: 20 94 18 jsr $1894
+113D: E6 11    inc $11
+113F: D0 07    bne $1148
+1141: C6 6F    dec $6f
+1143: D0 03    bne $1148
+1145: 4C 4B 10 jmp $104b
+1148: A5 C5    lda $c5          -- 
+114A: C9 40    cmp #$40
+114C: F0 E6    beq $1134
+114E: 20 38 17 jsr $1738
+1151: 4C 4B 10 jmp $104b
 1154: 20 1E EB jsr $eb1e        -- get keyboard input
 1157: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
-115A: 20 94 18 jsr $1894        -- play end game music <-> $68 = 02, triggered when the user break the history highest score
-115D: A5 C5    lda $c5			-- load $c5 to A, $c5: keyboard input
-115F: C9 40    cmp #$40			-- compare $c5 with 40, 40 is nothing entered
-1161: F0 F1    beq $1154		-- if $c5 == 40, jump to 1154: get keyboard input again
-1163: 60       rts				-- if we get an input, return to the caller
-
--- update the colonists status
-1164: A5 1B    lda $1b			-- load $1b to A, how many landers are left
-1166: 0A       asl a			-- A = A * 2, landers are not close to each other, there are space between lander status in right 
-1167: AA       tax				-- transfer A to X, calculate lander color pointer.
-1168: A9 02    lda #$02			-- load red color into A	
-116A: 81 26    sta ($26, x)		-- lander live character set color pointer
-116C: A9 00    lda #$00			-- load 0 into A
-116E: 85 1D    sta $1d			-- store 0 into 1D
-1170: 20 40 18 jsr $1840		-- jump to subroutine $1840, deal with lander explode
-1173: A5 5E    lda $5e			-- load $5e to A, $5e decide whether to play demo
-1175: F0 03    beq $117a		-- if $5e == 0, jump to 117a, given colonist dead 
-1177: 4C 4B 10 jmp $104b		-- $5e not equal to zero, jump to 104b: game beginning
-117A: A0 02    ldy #$02			-- load 02 into Y, y is the counter of colonist
-117C: B9 18 00 lda $0018, y		-- load colonist status: 0 - on ground, 1- in lander, 2-dead
-117F: F0 0F    beq $1190		-- if colonist on the ground, jump to 1190
--- colonist dead in lander
-1181: A9 02    lda #$02			-- load 02 into A, 02 means colonist dead
-1183: 99 18 00 sta $0018, y		-- update colonist status to death
-1186: 84 1E    sty $1e			-- store Y into 1E, 1e now have pervious colonist index
-1188: 06 1E    asl $1e			-- 1e = 1e * 2
-118A: A6 1E    ldx $1e			-- load 1e to X
-118C: A9 02    lda #$02			-- load 02 into A, 02 is the red color
-118E: 81 20    sta ($20, x)     -- load red color to colonist live character at left bottom.
-1190: 88       dey				-- y--
-1191: 10 E9    bpl $117c		-- if y >= 0, jump to 117c, check next colonist
-1193: C6 1B    dec $1b			-- 1b--, 1b is the counter of lander
-1195: 30 03    bmi $119a		-- if 1b < 0, means no more landers can be used, jump to 119a, game end
-1197: 4C 77 10 jmp $1077		-- goto 1077, game initialization
-119A: 4C 9C 10 jmp $109c        -- game end
--- colonist hit by the lander and dead on the ground guess
-119D: A4 1F    ldy $1f			-- load 1f to Y, 1f is the lander near to which colonists
-119F: A9 02    lda #$02			-- load 02 into A, 02 means colonist dead
-11A1: 99 18 00 sta $0018, y		-- update colonist status to death
-11A4: 84 1E    sty $1e			-- store Y into 1E, 1e now have pervious colonist index
-11A6: 06 1E    asl $1e			-- 1e = 1e * 2
-11A8: A6 1E    ldx $1e			-- load 1e to X
-11AA: A9 02    lda #$02			-- load 02 into A, 02 is the red color
-11AC: 81 20    sta ($20, x)     -- load red color to colonist live character at left bottom.
-11AE: A9 04    lda #$04         -- load pointer 04 to A
-11B0: 85 68    sta $68          -- $68 = 04, when play music, play 1bf0 music, colonist is killed by lander.
-11B2: A5 1D    lda $1d			-- load 1d to A, 1d is the counter of lander
-11B4: 30 AE    bmi $1164		-- if 1d < 0,jump to 1164, loop again
-11B6: A9 00    lda #$00			-- load 00 into A
-11B8: 85 1D    sta $1d			-- store 00 into 1D, last life
-11BA: 4C 96 10 jmp $1096		-- jump to 1096, user can still control lander	
+115A: 20 94 18 jsr $1894
+115D: A5 C5    lda $c5
+115F: C9 40    cmp #$40
+1161: F0 F1    beq $1154
+1163: 60       rts
+1164: A5 1B    lda $1b
+1166: 0A       asl a
+1167: AA       tax
+1168: A9 02    lda #$02
+116A: 81 26    sta ($26, x)
+116C: A9 00    lda #$00
+116E: 85 1D    sta $1d
+1170: 20 40 18 jsr $1840
+1173: A5 5E    lda $5e
+1175: F0 03    beq $117a
+1177: 4C 4B 10 jmp $104b
+117A: A0 02    ldy #$02
+117C: B9 18 00 lda $0018, y
+117F: F0 0F    beq $1190
+1181: A9 02    lda #$02
+1183: 99 18 00 sta $0018, y
+1186: 84 1E    sty $1e
+1188: 06 1E    asl $1e
+118A: A6 1E    ldx $1e
+118C: A9 02    lda #$02
+118E: 81 20    sta ($20, x)         -- read $20 area offset x
+1190: 88       dey
+1191: 10 E9    bpl $117c
+1193: C6 1B    dec $1b
+1195: 30 03    bmi $119a
+1197: 4C 77 10 jmp $1077
+119A: 4C 9C 10 jmp $109c                -- game end??
+119D: A4 1F    ldy $1f
+119F: A9 02    lda #$02
+11A1: 99 18 00 sta $0018, y
+11A4: 84 1E    sty $1e
+11A6: 06 1E    asl $1e
+11A8: A6 1E    ldx $1e
+11AA: A9 02    lda #$02
+11AC: 81 20    sta ($20, x)             -- read $20 area
+11AE: A9 04    lda #$04                 -- load pointer 04 to A
+11B0: 85 68    sta $68                  -- $68 = 04, when play music, play 1bf0 music, colonist is killed by lander.
+11B2: A5 1D    lda $1d
+11B4: 30 AE    bmi $1164
+11B6: A9 00    lda #$00
+11B8: 85 1D    sta $1d
+11BA: 4C 96 10 jmp $1096
 
 -- subroutine: check lander status at $1d, update the lander with corresponding events
--- based on what is stored in $1d(A), determine what to do next
-		-- $1d(A) = 86, lander is on the ground
-		-- $1d(A) = 0C, lander hit colonist
-		-- $1d(A) = 8F, lander reach to orbital docking pad (may be dead)
-		-- $1d(A) = 80, lander hit the ground, or user make lander self-destory 
-11BD: C9 8F    cmp #$8f       	-- 8F: the lander reaches to orbital docking pad
-11BF: F0 76    beq $1237       	-- if lander reach to orbital docking pad, goto 1237 
-11C1: C9 8C    cmp #$8c        	-- 8C: not sure what it is
-11C3: F0 D8    beq $119d      	-- colonist hit by the lander and dead on the ground
-11C5: C9 0C    cmp #$0c       	-- check if it is 0C hit colonist
-11C7: F0 D4    beq $119d        -- colonist hit by the lander and dead on the ground
-11C9: C9 86    cmp #$86       	-- check if it is 86 <-> lander on the ground
-11CB: D0 97    bne $1164       	-- update colonist status
--- if no situation above, then lander hit on the ground
-11CD: A5 3A    lda $3a         	-- load 3a to A, lander orientation + fuel or not
-								-- 0x: head left, 1x: head up, 2x: head right, x7: power up, xf: no power
-11CF: 29 10    and #$10			-- and 3a with 10
-11D1: F0 91    beq $1164		-- if 3a & 10 = 0, jump to 1164, update colonist status
-11D3: A5 47    lda $47			-- load lander vertical acceleration indicator, when hit safe area 00 is safe, else lander in danger
-11D5: D0 8D    bne $1164		-- if is 00, safe! jump to 1164, update colonist status
-11D7: A5 45    lda $45			-- load lander horizontal acceleration indicator, when hit safe area 00 is safe, else lander in danger
-11D9: F0 04    beq $11df		-- if is 00, safe! jump to 11df
-11DB: 49 FF    eor #$ff			-- else, lander in danger, xor with FF
-11DD: D0 85    bne $1164		-- update colonist status
-11DF: 20 38 17 jsr $1738		-- read input
-11E2: A5 3B    lda $3b			-- load 3b to A, 3b sis lander status indicator, 00 is in the air, 01 is in safe area
-11E4: D0 4B    bne $1231		-- if 3b is 00, jump to 1231, user can still control lander
-11E6: A9 01    lda #$01			-- load 01 into A, 01 means we are in safe area
-11E8: 85 3B    sta $3b			-- store safe into 3b,  we are in safe area
-11EA: A9 17    lda #$17			-- 17 <-> lander points upward
-11EC: 85 3A    sta $3a			-- update lander orientation to upward
-11EE: A9 00    lda #$00			-- load 00 into A
-11F0: 8D 0D 90 sta $900d		-- store 00 into noise
--- clear lander status related data
-11F3: 85 44    sta $44			-- clear 44 to 0
-11F5: 85 45    sta $45			-- clear 45 to 0
-11F7: 85 46    sta $46			-- clear 46 to 0
-11F9: 85 47    sta $47			-- clear 47 to 0
-11FB: C6 43    dec $43			-- decrement 43
-11FD: 20 14 18 jsr $1814 		-- picked up the colonist event
--- copy data from $30 area to $14 area
-	-- 30 area: screen position of shifting ship
-	-- 14 area here is: store temporary address
-1200: A2 02    ldx #$02			-- load 02 into X
-1202: A0 00    ldy #$00			-- load 00 into Y, Y is 14 addr counter
-1204: B5 30    lda $30, x		-- load $32 into A
-1206: 99 14 00 sta $0014, y		-- store A int $14
-1209: E8       inx				-- increment X
-120A: C8       iny				-- increment Y
-120B: B5 30    lda $30, x		-- load $33 into A
-120D: 99 14 00 sta $0014, y		-- store A into $15
-1210: A2 06    ldx #$06			-- load 06 into X
-1212: C8       iny				-- increment Y, y=2
-1213: B5 30    lda $30, x		-- load $36 into A
-1215: 99 14 00 sta $0014, y		-- store A into $16
-1218: E8       inx				-- increment X
-1219: C8       iny				-- increment Y, y=3
-121A: B5 30    lda $30, x		-- load $37 into A
-121C: 99 14 00 sta $0014, y		-- store A into $17
--- finish copying data 
-121F: 20 A9 14 jsr $14a9		-- now we can load shift ship
-1222: 20 DD 13 jsr $13dd		-- run the game logic part
-1225: A9 E3    lda #$e3			-- E3: safe landing ground
-1227: A2 00    ldx #$00			-- load 00 into X
-1229: 86 1D    stx $1d         	-- set 1d to 00 ship pick up a colonist finisheds
-122B: 81 14    sta ($14, x)		-- store E3 on screen
-122D: A2 02    ldx #$02			-- load 02 into X
-122F: 81 14    sta ($14, x)		-- store 02 on screen
-1231: 4C 96 10 jmp $1096		-- jump to 1096, user can still control the lander
-1234: 4C 64 11 jmp $1164		-- jump to 1164, update colonist status
-
--- situation: lander reach to orbital docking pad
-1237: A5 3A    lda $3a			-- load 3a to A, lander orientation + fuel or not
-								-- 0x: head left, 1x: head up, 2x: head right, x7: power up, xf: no power
-1239: 29 10    and #$10			-- and 3a with 10
-123B: F0 F7    beq $1234		-- if is 00, jump to 1234, update colonist status
-123D: A5 47    lda $47          -- load lander vertical acceleration indicator, when hit safe area 00 is safe, else lander in danger
-123F: C9 FF    cmp #$ff         -- compare with FF, when go up, vertical acceleration smaller than ff.
-1241: D0 F1    bne $1234		-- if 47 is not ff, docking speed too fast, jump to 1234, update colonist status
-1243: A5 45    lda $45			-- load 45 to A, lander horizontal acceleration indicator
-1245: D0 ED    bne $1234		-- docking speed too fast, jump to 1234, update colonist status
-1247: 8D 0D 90 sta $900d		-- store a into noise
-124A: 85 1D    sta $1d			-- store A into 1d, 1d is lander destoryed indicator
-124C: A9 00    lda #$00			-- load 00 into A
-124E: 85 1E    sta $1e			-- store 00 into 1e for calculation
-1250: A0 02    ldy #$02			-- load 02 into Y, Y is used for counter
-1252: B9 18 00 lda $0018, y		-- load one colonist status from $18 area
-1255: C9 01    cmp #$01			-- compare with 01, 01 means in lander
-1257: D0 12    bne $126b		-- if the current colonist in lander, do nothing, jump to 126b
-1259: A9 32    lda #$32			-- load 32 into A, 32 is max fuel
-125B: 18       clc				-- clear carry
--- score gained by docking with colonist
-125C: 65 1E    adc $1e			-- add 1e to A, 
-125E: 85 1E    sta $1e			-- store back to 1e
-1260: 18       clc				-- clear carry
-1261: 65 2E    adc $2e			-- add 2e to A
-1263: 85 2E    sta $2e			-- store back to 2e
-1265: A9 00    lda #$00			-- load 00 into A
-1267: 65 2F    adc $2f			-- add 2f to A
-1269: 85 2F    sta $2f			-- add score: when carry one colonist reach to orbital docking pad
-126B: 88       dey          	-- Y --
-126C: 10 E4    bpl $1252     	-- check next colonist
--- finish checking all colonists
--- not 100% sure code below
-126E: A5 1E    lda $1e        	-- load 1e to A     
-1270: C9 96    cmp #$96      	-- compare with 96
-1272: D0 1E    bne $1292   		-- if not 96, jump to 1292
-1274: 06 1C    asl $1c        	-- $1c = $1c * 2
-1276: E6 1C    inc $1c			-- $1c = $1c + 1
-1278: A9 32    lda #$32	        -- load 32 into A, max fuel per slot
-127A: 38       sec      		-- set carry
-127B: E5 1C    sbc $1c          -- subtract Memory from Accumulator with Barrow
-127D: 85 2D    sta $2d          -- store A into 2d
-127F: A5 4E    lda $4e			-- fuel line
-1281: 38       sec				-- set carry
-1282: E9 CE    sbc #$ce        	-- subtract CE from A
-1284: 0A       asl a			-- shift left
-1285: 0A       asl a			-- shift left
-1286: 0A       asl a			-- shift left
-1287: 18       clc				-- clear carry
-1288: 65 2E    adc $2e			-- add 2e to A, add score
-128A: 85 2E    sta $2e			-- store back to 2e, add score
-128C: A9 00    lda #$00			-- load 00 into A
-128E: 65 2F    adc $2f			-- add 2f to A, add score
-1290: 85 2F    sta $2f			-- store back to 2f, add score
-1292: E6 43    inc $43			-- $43 = $43 + 1
-1294: A9 80    lda #$80			-- load 80 into A
-1296: 85 44    sta $44			-- store 80 into $44
-1298: A9 01    lda #$01			-- load 01 into A
-129A: 85 3B    sta $3b			-- store 01 into $3b
-129C: A9 00    lda #$00			-- load 00 into A
-129E: 85 46    sta $46			-- store 00 into $46
-12A0: 85 47    sta $47			-- store 00 into $47, clear vertical acceleration indicator
-12A2: A5 3A    lda $3a			-- load 3a to A, lander orientation + fuel or not:
-12A4: 29 37    and #$37			-- and 37, 37 is 00110111,
-12A6: 85 3A    sta $3a			-- store back to 3a
--- docking success, we can play music now
-12A8: A9 03    lda #$03         -- load 03 to A, docking success
-12AA: 85 68    sta $68			-- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
-12AC: 20 A9 14 jsr $14a9		-- load the shift ship we just calculate on screen
-12AF: 20 DD 13 jsr $13dd		-- chcek game logic
-12B2: 20 00 19 jsr $1900		-- move docking pad		
-12B5: 20 62 13 jsr $1362		-- move the lander
-12B8: 20 94 18 jsr $1894		-- audio 3 pointer, point to the address where docking success or picking up colonist success music address
-12BB: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
-12BE: A5 41    lda $41			-- load 41 to A, 41 is lander horizontal position
-12C0: C9 A7    cmp #$a7			-- compare with A7, A7 is right side of the screen
-12C2: 90 E8    bcc $12ac		-- if less than A7, jump to 12ac, let docking pad carry lander to move to the right
-12C4: 4C 74 10 jmp $1074		-- if we reach the right of the screen, jump to 1074, we jump to another map!
+11BD: C9 8F    cmp #$8f                 -- 8F: the lander reattaches to orbital docking pad
+11BF: F0 76    beq $1237                -- 
+11C1: C9 8C    cmp #$8c                 -- 8C: 
+11C3: F0 D8    beq $119d                -- 
+11C5: C9 0C    cmp #$0c                 -- check if it is 0C <-> colonist
+11C7: F0 D4    beq $119d                -- 
+11C9: C9 86    cmp #$86                 -- -- 04-> 84 -> 86
+11CB: D0 97    bne $1164                -- 
+11CD: A5 3A    lda $3a                  -- 
+11CF: 29 10    and #$10
+11D1: F0 91    beq $1164
+11D3: A5 47    lda $47
+11D5: D0 8D    bne $1164
+11D7: A5 45    lda $45
+11D9: F0 04    beq $11df
+11DB: 49 FF    eor #$ff
+11DD: D0 85    bne $1164
+11DF: 20 38 17 jsr $1738
+11E2: A5 3B    lda $3b
+11E4: D0 4B    bne $1231
+11E6: A9 01    lda #$01
+11E8: 85 3B    sta $3b
+11EA: A9 17    lda #$17
+11EC: 85 3A    sta $3a
+11EE: A9 00    lda #$00
+11F0: 8D 0D 90 sta $900d
+11F3: 85 44    sta $44
+11F5: 85 45    sta $45
+11F7: 85 46    sta $46
+11F9: 85 47    sta $47
+11FB: C6 43    dec $43
+11FD: 20 14 18 jsr $1814
+1200: A2 02    ldx #$02
+1202: A0 00    ldy #$00
+1204: B5 30    lda $30, x
+1206: 99 14 00 sta $0014, y
+1209: E8       inx
+120A: C8       iny
+120B: B5 30    lda $30, x
+120D: 99 14 00 sta $0014, y
+1210: A2 06    ldx #$06
+1212: C8       iny
+1213: B5 30    lda $30, x
+1215: 99 14 00 sta $0014, y
+1218: E8       inx
+1219: C8       iny
+121A: B5 30    lda $30, x
+121C: 99 14 00 sta $0014, y
+121F: 20 A9 14 jsr $14a9
+1222: 20 DD 13 jsr $13dd
+1225: A9 E3    lda #$e3             -- E3: safe landing ground
+1227: A2 00    ldx #$00
+1229: 86 1D    stx $1d                  -- set 1d to 00 ship pick up a colonist finisheds
+122B: 81 14    sta ($14, x)
+122D: A2 02    ldx #$02
+122F: 81 14    sta ($14, x)
+1231: 4C 96 10 jmp $1096
+1234: 4C 64 11 jmp $1164
+1237: A5 3A    lda $3a
+1239: 29 10    and #$10
+123B: F0 F7    beq $1234
+123D: A5 47    lda $47                  -- if the lander is safe to be attached back to orbital docking pad
+123F: C9 FF    cmp #$ff                 
+1241: D0 F1    bne $1234
+1243: A5 45    lda $45
+1245: D0 ED    bne $1234
+1247: 8D 0D 90 sta $900d
+124A: 85 1D    sta $1d
+124C: A9 00    lda #$00
+124E: 85 1E    sta $1e
+1250: A0 02    ldy #$02
+1252: B9 18 00 lda $0018, y
+1255: C9 01    cmp #$01
+1257: D0 12    bne $126b
+1259: A9 32    lda #$32
+125B: 18       clc
+125C: 65 1E    adc $1e
+125E: 85 1E    sta $1e
+1260: 18       clc
+1261: 65 2E    adc $2e
+1263: 85 2E    sta $2e
+1265: A9 00    lda #$00
+1267: 65 2F    adc $2f
+1269: 85 2F    sta $2f                  -- add store 50: when reattach to orbital docking pad
+126B: 88       dey                      -- Y --
+126C: 10 E4    bpl $1252                --
+126E: A5 1E    lda $1e                  --      
+1270: C9 96    cmp #$96                 --
+1272: D0 1E    bne $1292                --
+1274: 06 1C    asl $1c                  -- 
+1276: E6 1C    inc $1c                  -- 
+1278: A9 32    lda #$32                 --
+127A: 38       sec                      --
+127B: E5 1C    sbc $1c                  --
+127D: 85 2D    sta $2d                  --
+127F: A5 4E    lda $4e                  -- fuel line
+1281: 38       sec
+1282: E9 CE    sbc #$ce        
+1284: 0A       asl a
+1285: 0A       asl a
+1286: 0A       asl a
+1287: 18       clc
+1288: 65 2E    adc $2e
+128A: 85 2E    sta $2e
+128C: A9 00    lda #$00
+128E: 65 2F    adc $2f
+1290: 85 2F    sta $2f
+1292: E6 43    inc $43
+1294: A9 80    lda #$80
+1296: 85 44    sta $44
+1298: A9 01    lda #$01
+129A: 85 3B    sta $3b
+129C: A9 00    lda #$00
+129E: 85 46    sta $46
+12A0: 85 47    sta $47
+12A2: A5 3A    lda $3a
+12A4: 29 37    and #$37
+12A6: 85 3A    sta $3a
+12A8: A9 03    lda #$03                 -- load 03 to A
+12AA: 85 68    sta $68                  -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
+12AC: 20 A9 14 jsr $14a9
+12AF: 20 DD 13 jsr $13dd
+12B2: 20 00 19 jsr $1900			
+12B5: 20 62 13 jsr $1362
+12B8: 20 94 18 jsr $1894
+12BB: 20 42 17 jsr $1742            -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line
+12BE: A5 41    lda $41
+12C0: C9 A7    cmp #$a7
+12C2: 90 E8    bcc $12ac
+12C4: 4C 74 10 jmp $1074
 
 
--- subroutine lander control logic, read input and control landercalculate fuel and update fuel line
-12C7: A5 3A    lda $3a                  -- load $3a to A, 3a is lander orientation + fuel or not:  0x: head left, 1x: head up, 2x: head right.      x7: power up, xf: no power
-12C9: 29 37    and #$37                 -- && 37, A = 3a & 37
+-- subroutine ship control logic, calculate fuel and update fuel line
+12C7: A5 3A    lda $3a                  -- 
+12C9: 29 37    and #$37                 -- 37
 12CB: 85 3A    sta $3a                  -- A = $3a
 12CD: A9 00    lda #$00                 -- A = 00
 12CF: 8D 0D 90 sta $900d                -- noise 
-12D2: A5 5E    lda $5e                  -- $5e = A, if 5e is not 0, do the demo.
-12D4: F0 03    beq $12d9                -- goto 12d9, read user input and then control lander
-12D6: 4C 70 19 jmp $1970                -- goto 1970, play demo
+12D2: A5 5E    lda $5e                  -- $5e = A
+12D4: F0 03    beq $12d9                -- 12d9
+12D6: 4C 70 19 jmp $1970                -- 
 12D9: 20 1E EB jsr $eb1e                -- read from keyboard
 -- keyboard: 09-W, 11-A, 12-D, 20-space, explode-Enter at C5, CB
 12DC: A5 C5    lda $c5                  -- load last read character 
@@ -450,9 +415,9 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 12EA: C9 20    cmp #$20                 -- key Space 
 12EC: F0 50    beq $133e                -- move up
 12EE: C9 0F    cmp #$0f                 -- key Enter
-12F0: D0 6F    bne $1361                -- lander explode, return
+12F0: D0 6F    bne $1361                -- lander explode 
 -- set lander explosion flag
-12F2: A9 80    lda #$80                 -- A = 80 -> trigger lander explode process
+12F2: A9 80    lda #$80                 -- A = 80       trigger lander explode process
 12F4: 85 1D    sta $1d                  -- 1d = 80 > lander exploded
 12F6: D0 69    bne $1361                -- return
 -- A: move left
@@ -463,36 +428,37 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1300: A9 FF    lda #$ff                 -- A = FF 
 1302: 85 4B    sta $4b                  -- $4b = FF
 1304: 85 49    sta $49                  -- $49 = FF
-1306: A9 F1    lda #$f1                 -- load 0xf1 to A
+1306: A9 F1    lda #$f1                 -- 
 1308: 85 4A    sta $4a                  -- $4a = F1
-130A: A9 F9    lda #$f9                 -- load 0xf9 to A
+130A: A9 F9    lda #$f9                 -- 
 130C: 85 48    sta $48                  -- $48 = F9
-130E: D0 51    bne $1361                -- return
+130E: D0 51    bne $1361                -- 
+--
 -- W: put lander straight
 1310: A9 17    lda #$17                 -- 17 <-> lander points upward
 1312: 85 3A    sta $3a                  -- lander orientation straight
-1314: A9 FF    lda #$ff                 -- load 0xff to A
+1314: A9 FF    lda #$ff                 -- 
 1316: 85 4B    sta $4b                  -- $4b = FF
-1318: A9 EF    lda #$ef                 -- load 0xef to A
+1318: A9 EF    lda #$ef                 -- 
 131A: 85 4A    sta $4a                  -- $4a = EF
-131C: A9 00    lda #$00                 -- load 0x00 to A
+131C: A9 00    lda #$00                 -- 
 131E: 85 49    sta $49                  -- $49 = 00
 1320: 85 48    sta $48                  -- $48 = 00
-1322: F0 3D    beq $1361                -- return
+1322: F0 3D    beq $1361                -- 
 -- D: move right
 1324: A5 3B    lda $3b                  -- 3b <-> 1: on the loading dock, or orbital docking pad, 0: detached
-1326: D0 39    bne $1361                -- return
-1328: A9 27    lda #$27                 -- 27 <-> lander right
+1326: D0 39    bne $1361                -- fuel
+1328: A9 27    lda #$27                 -- 
 132A: 85 3A    sta $3a                  -- lander orientation right
-132C: A9 FF    lda #$ff                 -- load 0xff to A
+132C: A9 FF    lda #$ff                 -- 
 132E: 85 4B    sta $4b                  -- $4b = FF
-1330: A9 F1    lda #$f1                 -- load 0xf1 to A
+1330: A9 F1    lda #$f1                 -- 
 1332: 85 4A    sta $4a                  -- $4a = F1 
-1334: A9 00    lda #$00                 -- load 0x00 to A
+1334: A9 00    lda #$00                 -- 
 1336: 85 49    sta $49                  -- $49 = 00
-1338: A9 07    lda #$07                 -- load 0x07 to A
+1338: A9 07    lda #$07                 -- 
 133A: 85 48    sta $48                  -- $48 = 07
-133C: D0 23    bne $1361                -- return
+133C: D0 23    bne $1361                -- 
 -- move up, use fuel 
 133E: A5 4E    lda $4e                  -- 4e|4f fuel 
 1340: C9 CD    cmp #$cd                 -- if fuel burned out
@@ -508,103 +474,94 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1355: D0 0A    bne $1361                -- return 
 1357: A0 00    ldy #$00                 -- Y = 0
 1359: 91 4E    sta ($4e), y             -- decrease fuel line 
-135B: C6 4E    dec $4e                  -- when pointer to 1FCE, no fuel
+135B: C6 4E    dec $4e                  -- when pointer to 1FCE, no fuel$47
 135D: A5 2D    lda $2d                  -- maximum fuel per slot
 135F: 85 2C    sta $2c                  -- reload maximum fuel for this slot
 1361: 60       rts                      -- return
 
 
--- subroutine: lander movement
+-- if delete this part, ship won't move
 1362: AD 0D 90 lda $900d                -- load noise
-1365: F0 1A    beq $1381                -- if no noise, go to 1381
-1367: 18       clc                      -- clear the carry
--- update horizontal acceleration
-1368: A5 48    lda $48                  -- $48 = lander head point-to indicator: 07 -> right, 0 -> up, f9-> left 
-136A: 65 44    adc $44                  -- $44 += $48 -- add horizontal acceleration 
-136C: 85 44    sta $44                  -- $44 = update the horizontal acceleration
--- update horizontal acceleration indicator
-136E: A5 49    lda $49                  -- $49 = lander head point-to indicator: 00 -> right, 0 -> up, ff -> left
-1370: 65 45    adc $45                  -- $45 += $49 -- add horizontal acceleration
-1372: 85 45    sta $45                  -- $45 = update the horizontal acceleration level 
-1374: 18       clc                      -- clear the carry
--- update vertical acceleration
-1375: A5 4A    lda $4a                  -- lander head point-to indicator: f1 -> right, ef -> up, f1 -> left
-1377: 65 46    adc $46                  -- add vertial acceleration
-1379: 85 46    sta $46                  -- update the vertical acceleration
--- update vertical acceleration indicator
-137B: A5 4B    lda $4b                  -- lander vertical acceleration indicator, when hit safe area 00 is safe, else lander dead
-137D: 65 47    adc $47                  -- update the vertical acceleration level 
-137F: 85 47    sta $47                  -- .
--- update vertoca; acceleration according free drop
-1381: A5 3B    lda $3b                  -- if the lander is in safe mode <-> not moving
-1383: D0 0B    bne $1390                -- to 1390, no vertical acceleartion level changed
-1385: 18       clc                      -- clear the carry
-1386: A9 07    lda #$07                 -- A = 7 to the vertical acceleration counter
-1388: 65 46    adc $46                  -- add 7 to the vertical acceleration counter
-138A: 85 46    sta $46                  -- store back to $46
-138C: 90 02    bcc $1390                -- to 1390, no vertical acceleration level changed 
+1365: F0 1A    beq $1381                -- 
+1367: 18       clc                      -- 
+1368: A5 48    lda $48                  -- 
+136A: 65 44    adc $44                  -- a $44 += $48
+136C: 85 44    sta $44                  -- 
+136E: A5 49    lda $49                  -- 
+1370: 65 45    adc $45                  -- 
+1372: 85 45    sta $45                  -- 
+1374: 18       clc                      -- 
+1375: A5 4A    lda $4a                  -- 4a ???
+1377: 65 46    adc $46                  -- 
+1379: 85 46    sta $46                  -- 
+137B: A5 4B    lda $4b                  -- 4b ???
+137D: 65 47    adc $47                  -- 
+137F: 85 47    sta $47                  -- 
+
+--
+1381: A5 3B    lda $3b                  -- if not fueled
+1383: D0 0B    bne $1390                -- 
+1385: 18       clc                      
+1386: A9 07    lda #$07                 -- 
+1388: 65 46    adc $46
+138A: 85 46    sta $46
+138C: 90 02    bcc $1390                -- branch on carry clear
 138E: E6 47    inc $47                  -- lander start to free drop
--- update horizontal speed base on horizontal acceleration
-1390: 18       clc                      -- clear the carry
-1391: A5 44    lda $44                  -- lander acceleartion
-1393: 65 40    adc $40                  -- lander horizontal speed
-1395: 85 40    sta $40                  -- store horizontal speed
--- update lander x position
-1397: A5 45    lda $45                  -- A = lander's horizontal acceleartion level 
-1399: 65 41    adc $41                  -- udpate the lander's x coordinate on the screen
-139B: 85 41    sta $41                  -- .
-139D: C9 A8    cmp #$a8                 -- check if lander is at screen right boundary
-139F: B0 1D    bcs $13be                -- goes to 13BE
-13A1: 18       clc                      -- clear the carry
--- update Y speed
-13A2: A5 46    lda $46                  -- lander vertical acceleration 
-13A4: 65 42    adc $42                  -- update Y speed
-13A6: 85 42    sta $42                  -- .
--- update lander y position
-13A8: A5 47    lda $47                  -- lander vertical acceleration indicator
-13AA: 65 43    adc $43                  -- update Y position 
-13AC: 85 43    sta $43                  -- .
-13AE: C9 B0    cmp #$b0                 -- if the Y position is less than #$b0,<-> in boundary
-13B0: 90 2A    bcc $13dc                -- return
--- reset vertical acceleartion, Y position and Y speed
-13B2: A9 00    lda #$00                 -- A = 00
-13B4: 85 43    sta $43                  -- reset Y position
-13B6: 85 42    sta $42                  -- reset lander Y speed
-13B8: 85 46    sta $46                  -- reset vertical acceleration
-13BA: 85 47    sta $47                  -- reset vertical acceleration level 
-13BC: F0 1E    beq $13dc                -- return 
--- update X position when lander is with orbital docking pad and move to the next scene
-13BE: 49 FF    eor #$ff                 -- 
-13C0: 29 F0    and #$f0                 -- 
-13C2: F0 0C    beq $13d0                -- if X reaches the boundary 
-13C4: A9 A7    lda #$a7                 -- reset to X position right boundary
-13C6: 85 41    sta $41                  -- .
--- reset horizontal speed
-13C8: A9 00    lda #$00                 -- A = 0
-13CA: 85 3B    sta $3b                  -- not safe
-13CC: 85 40    sta $40                  -- reset horizontal speed
-13CE: F0 06    beq $13d6                -- 
--- reset horizontal speed and X position (attached to orbital docking pad)
-13D0: A9 00    lda #$00                 -- A = 0
-13D2: 85 41    sta $41                  -- X position = 0
-13D4: 85 40    sta $40                  -- X speed = 0
-13D6: 85 44    sta $44                  -- lander horizontal acceleration counter
-13D8: 85 45    sta $45                  -- lander horizontal acceleration indicator
-13DA: F0 C5    beq $13a1                -- reupdate lander position from 13a1
-13DC: 60       rts                      -- return 
+1390: 18       clc                      -- 
 
 
-- subroutine: game logic part
-13DD: A5 41    lda $41			-- load 41 into a, 41 is x position of the lander on screen
-13DF: 4A       lsr a			-- A = A >> 1
-13E0: 4A       lsr a			-- A = A >> 1
-13E1: 4A       lsr a			-- A = A >> 1
-13E2: C5 38    cmp $38			-- compare A with 38, $38 is lander x position -> x coordinate in [0,14]
-13E4: 85 38    sta $38			-- store A into 38
-13E6: F0 1E    beq $1406		-- if $41 >> 3 == $38, means lander is not moving on x axis, go to 1406
-13E8: 90 0E    bcc $13f8		-- if x position smaller than pervious position(move left), go to 13f8
-13EA: A2 06    ldx #$06			-- else deal with x position larger than pervious position(move right)
-13EC: F6 30    inc $30, x		-- 
+1391: A5 44    lda $44
+1393: 65 40    adc $40
+1395: 85 40    sta $40
+1397: A5 45    lda $45                  -- last 
+1399: 65 41    adc $41
+139B: 85 41    sta $41                  -- 41: speed on x axis
+139D: C9 A8    cmp #$a8
+139F: B0 1D    bcs $13be
+13A1: 18       clc
+13A2: A5 46    lda $46 
+13A4: 65 42    adc $42
+13A6: 85 42    sta $42
+13A8: A5 47    lda $47
+13AA: 65 43    adc $43
+13AC: 85 43    sta $43
+13AE: C9 B0    cmp #$b0
+13B0: 90 2A    bcc $13dc
+13B2: A9 00    lda #$00
+13B4: 85 43    sta $43
+13B6: 85 42    sta $42
+13B8: 85 46    sta $46
+13BA: 85 47    sta $47
+13BC: F0 1E    beq $13dc
+13BE: 49 FF    eor #$ff
+13C0: 29 F0    and #$f0
+13C2: F0 0C    beq $13d0
+13C4: A9 A7    lda #$a7
+13C6: 85 41    sta $41
+13C8: A9 00    lda #$00
+13CA: 85 3B    sta $3b
+13CC: 85 40    sta $40
+13CE: F0 06    beq $13d6
+13D0: A9 00    lda #$00
+13D2: 85 41    sta $41
+13D4: 85 40    sta $40
+13D6: 85 44    sta $44
+13D8: 85 45    sta $45
+13DA: F0 C5    beq $13a1
+13DC: 60       rts
+
+
+- subroutine game logic part? TODO
+13DD: A5 41    lda $41
+13DF: 4A       lsr a
+13E0: 4A       lsr a
+13E1: 4A       lsr a
+13E2: C5 38    cmp $38
+13E4: 85 38    sta $38
+13E6: F0 1E    beq $1406
+13E8: 90 0E    bcc $13f8
+13EA: A2 06    ldx #$06
+13EC: F6 30    inc $30, x
 13EE: D0 02    bne $13f2
 13F0: F6 31    inc $31, x
 13F2: CA       dex
@@ -619,7 +576,6 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1402: CA       dex
 1403: CA       dex
 1404: 10 F4    bpl $13fa
--- the lander is not moving in horizontal direction
 1406: A5 43    lda $43
 1408: 4A       lsr a
 1409: 4A       lsr a
@@ -675,61 +631,62 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1466: 10 F1    bpl $1459
 1468: 88       dey
 1469: D0 EC    bne $1457
-146B: A2 06    ldx #$06				-- x = 06, will become 04, 02, 00 
-146D: A0 04    ldy #$04				-- y = 04 -> counter for four screen position of shifting ship
-
-146F: A1 30    lda ($30, x)         -- read lander position -> total four parts of lander (loop through every part)
-1471: F0 23    beq $1496			-- if nothing there, goto 1496, else -> something is there, check what it is
-1473: C9 E3    cmp #$e3             -- now we hit something! what is it? First compare with e3 -> e3 is safe landing ground, 
-1475: D0 07    bne $147e			-- if not safe landing ground, goto 147e, else -> safe landing ground, check if it is colonist
+146B: A2 06    ldx #$06
+146D: A0 04    ldy #$04
+146F: A1 30    lda ($30, x)         -- read lander position
+1471: F0 23    beq $1496
+1473: C9 E3    cmp #$e3             -- copmare the 8x8 pixel with e3 -> e3 is safe landing ground
+1475: D0 07    bne $147e
 1477: 98       tya                  -- if it is safe landing ground -> 
 1478: 05 1D    ora $1d
 
--- event: ship landed at ground
+-- no event for ship
 147A: 85 1D    sta $1d              -- ship landed at ground -> set 04 into 1d
-147C: D0 12    bne $1490            -- if 1d is not 0, goto 1490, else -> no event occured
+147C: D0 12    bne $1490            -- if 1d is not 0 -> no event occured, goto 1490 else -> event occured
 
--- event: hit something
+-- event: hit colonist
 147E: C9 0C    cmp #$0c             -- check if it is 0C <-> colonist, the ship hit the colonist
 1480: D0 06    bne $1488            -- if not hit the colonist, goto 1488, else handle the event ship hit the colonist
-1482: 05 1D    ora $1d				-- ohno, the ship hit the colonist
-1484: 85 1D    sta $1d              -- set A into 1d
-1486: D0 0E    bne $1496			-- if 1d is not 0, goto 1496, else -> no event occured
+1482: 05 1D    ora $1d
+1484: 85 1D    sta $1d              -- if the ship hit the colonist -> set 0c into 1d
+1486: D0 0E    bne $1496
 
--- event: hit, but not colonist, maybe docking pad or something else
-1488: C9 11    cmp #$11				-- check if it is 11 <-> docking pad, the ship hit the docking pad
-148A: D0 04    bne $1490			-- if not hit the docking pad, goto 1490, else handle the event ship hit the docking pad
-148C: A9 0F    lda #$0f				-- set 0f into a
-148E: 85 1D    sta $1d				-- 0f is marker for docking pad
+-- event: return to orbital docking pad
+1488: C9 11    cmp #$11
+148A: D0 04    bne $1490
+148C: A9 0F    lda #$0f
+148E: 85 1D    sta $1d
 
-1490: A9 80    lda #$80			-- set 80 into a
-1492: 05 1D    ora $1d			-- xor 1d with 80 protential 1d value: 84, 80 -> 80 ship dead, 84 colonist picked up
-1494: 85 1D    sta $1d			-- set 1d value into 1d
--- read four part of ship -> find out which part 
-1496: 98       tya				-- set y into a
-1497: 81 30    sta ($30, x)    	-- set a into $30 - $37, four screen position of shifting ship
-1499: 88       dey				-- decrease y
-149A: CA       dex				-- decrease x
-149B: CA       dex				-- decrease x
-149C: 10 D1    bpl $146f		-- if x is not positive, goto 146f
--- calculate protential 1f value -> which colonist hands up
-149E: A5 38    lda $38			-- load $38 -> lander x position -> x coordinate in [0,14]
-14A0: 18       clc				-- clear carry flag
-14A1: 69 02    adc #$02			-- add 02 into a
-14A3: 4A       lsr a			-- shift right a
-14A4: 4A       lsr a			-- shift right a
-14A5: 4A       lsr a			-- shift right a
-14A6: 85 1F    sta $1f			-- store a into 1f, 1f is which colonist hands up
-14A8: 60       rts				-- return
 
--- subroutine: update and set ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels
+-- event1: colonist picked up
+-- event2: ship dead
+-- protential 1d value: 04, 00
+1490: A9 80    lda #$80
+1492: 05 1D    ora $1d                  -- protential 1d value: 84, 80 -> 80 ship dead, 84 colonist picked up
+1494: 85 1D    sta $1d                  -- set 1d value into 1d
+1496: 98       tya
+1497: 81 30    sta ($30, x)        -- set lander position
+1499: 88       dey
+149A: CA       dex
+149B: CA       dex
+149C: 10 D1    bpl $146f
+149E: A5 38    lda $38
+14A0: 18       clc
+14A1: 69 02    adc #$02
+14A3: 4A       lsr a
+14A4: 4A       lsr a
+14A5: 4A       lsr a
+14A6: 85 1F    sta $1f
+14A8: 60       rts
+
+-- subroutine: update ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels
 -- shifting ship pixel
 14A9: A9 00    lda #$00			-- A = 00
 14AB: A2 06    ldx #$06			-- X = 06
 14AD: A0 1F    ldy #$1f			-- Y = 1F
 14AF: 81 30    sta ($30, x)		-- store 00 into shifting ship pixel area
 14B1: 99 08 1C sta $1c08, y		-- store a in 1c08, y position	<-------|
-14B4: 88       dey				-- Y -- 		        				|
+14B4: 88       dey				-- Y -- 								|
 14B5: CA       dex				-- X --									|
 14B6: CA       dex				-- X -- 								|
 14B7: 10 F6    bpl $14af						------------------------|
@@ -740,7 +697,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 
 -- subroutine: load main game menu, play main menu music
 14C0: A9 05    lda #$05         -- A = 0x05
-14C2: 85 6F    sta $6f          -- $6f = 0x05, 6f is the demo counter, when 6f == 0, play demo
+14C2: 85 6F    sta $6f          -- $6f = 0x05
 14C4: 20 83 15 jsr $1583        -- jump to subroutine $1583: generate the map and put on colonists, store position
 
 -- print "lunar rescue" on screen -> start at 1e5d
@@ -804,7 +761,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 152A: 91 14    sta ($14), y		-- store name into given screen index
 152C: C8       iny				-- Y += 1
 152D: D0 F6    bne $1525		-- branch not equal zero
-152F: 20 5B 17 jsr $175b        -- set score board to zeros
+152F: 20 5B 17 jsr $175b                -- set score board to zeros
 1532: AD 1C 1D lda $1d1c		-- load history high score into A
 1535: 85 1E    sta $1e			-- $1e = A
 1537: F0 09    beq $1542		-- branch equal zero
@@ -815,17 +772,17 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1542: AE 1B 1D ldx $1d1b		-- load history high score into A
 1545: F0 03    beq $154a		-- branch equal zero
 1547: 20 71 17 jsr $1771		-- calculate adding score, print score on screen
-154A: A9 01    lda #$01         -- load 1 to A
-154C: 85 68    sta $68          -- $68 = 01, when play music, play 1b60 music, game started.
-154E: 20 1E EB jsr $eb1e        -- get keyboard input 
-1551: 20 42 17 jsr $1742        -- jump to $1742, load $9004 to A until zero, TV raster beam line
-1554: 20 94 18 jsr $1894        -- play sound~
+154A: A9 01    lda #$01                 -- load 1 to A
+154C: 85 68    sta $68                  -- $68 = 01, when play music, play 1b60 music, game started.
+154E: 20 1E EB jsr $eb1e                -- get keyboard input 
+1551: 20 42 17 jsr $1742                -- jump to $1742, load $9004 to A until zero, TV raster beam line
+1554: 20 94 18 jsr $1894                -- play sound: game start music
 1557: E6 11    inc $11			-- $11 += 1
 1559: D0 0F    bne $156a		-- branch not equal zero
 155B: C6 6F    dec $6f			-- $6f -= 1, decresed with game start music music played
 155D: D0 0B    bne $156a		-- branch not equal zero
-155F: A9 00    lda #$00         -- load 0 to A
-1561: 85 68    sta $68          -- $68 = 00, when play music, play nothing, or prepare to play noise
+155F: A9 00    lda #$00                 -- load 0 to A
+1561: 85 68    sta $68                  -- $68 = 00, when play music, play nothing, or prepare to play noise
 1563: A9 01    lda #$01			-- load 1 to A
 1565: 85 5E    sta $5e			-- $5e = 01, when play music, play 1b60 music, game started.
 1567: 4C 2A 17 jmp $172a		-- jump to $172a, clear screen
@@ -833,10 +790,10 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 156C: C9 40    cmp #$40			-- compare A with $40
 156E: F0 DA    beq $154a		-- branch equal zero
 1570: 20 38 17 jsr $1738		-- jump to $1738
-1573: A9 00    lda #$00         -- load 0 to A
-1575: 85 68    sta $68          -- $68 = 00, when play music, play nothing, or prepare to play noise
+1573: A9 00    lda #$00                 -- load 0 to A
+1575: 85 68    sta $68                  -- $68 = 00, when play music, play nothing, or prepare to play noise
 1577: A9 09    lda #$09			-- load 9 to A
-1579: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
+1579: 8D 0E 90 sta $900e                -- bit 0-3 are volume, 4-7 are auxiliary color
 157C: A5 11    lda $11			-- load $11 to A
 157E: 85 10    sta $10			-- $10 = A
 1580: 4C 2A 17 jmp $172a		-- jump to $172a, clear screen
@@ -955,7 +912,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 163A: C9 1F    cmp #$1f			-- if this is bottom part of the screen address: 1fxx
 163C: F0 06    beq $1644		-- goto 1644
 163E: A5 14    lda $14			-- if we not goto 1644, $15 is 1e, means half part of the screen address: 1exx
-1640: C9 B0    cmp #$b0                 -- if the map is start from 1eb0 
+1640: C9 B0    cmp #$b0         -- if the map is start from 1eb0 
 1642: 90 0C    bcc $1650		-- if the starting address is lees than 1eb0, goto 1650
 1644: A9 E5    lda #$e5			-- loading a supporting stick(left) to A for smooth connection
 1646: 91 14    sta ($14), y		-- print the supporting stick onto the screen
@@ -968,7 +925,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1654: F0 04    beq $165a		-- value in 1e < 0b1000000, goto 165a
 1656: A9 E9    lda #$e9			-- value in 1e >= 0b1000000, load e9, E9 is colonists standing triangle platform with facing down-right
 1658: D0 02    bne $165c		-- goto 165c
-165A: A9 CE    lda #$ce        	        -- CE =  uphill, load uphill in A
+165A: A9 CE    lda #$ce        	-- CE =  uphill, load uphill in A
 165C: 91 14    sta ($14), y		-- print the uphill onto the screen
 165E: 20 A9 16 jsr $16a9		-- goto 16a9 and finish the map generation
 1661: A0 01    ldy #$01			-- y = 1
@@ -1290,139 +1247,130 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1813: 60       rts			-- return
 
 
--- subroutine: colonist picked up event
--- clear the colonist from the screen, set yellow.
-1814: A6 1F    ldx $1f			-- X = 1F, 1F is the index of the current colonist
-1816: B5 18    lda $18, x		-- A = $18, $18 is the status of the current colonist
-1818: D0 25    bne $183f		-- if not zero, means weather in lander or dead, no action needed, return
-181A: A9 01    lda #$01			-- A = 01, 01 means colonist is in lander
-181C: 95 18    sta $18, x		-- set the status of the current colonist to 01
-181E: 06 1F    asl $1f			-- 1F = 1F << 1, 1F is the index of the current colonist
-1820: A6 1F    ldx $1f			-- load 1f into A
-1822: A9 00    lda #$00			-- A = 00
-1824: 81 50    sta ($50, x) 	-- clear the colonist on the screen
-1826: A9 07    lda #$07			-- A = 07, yellow
-1828: 81 20    sta ($20, x) 	-- put yellow on the screen, indicated the colonist is in the lander
-182A: 18       clc				-- clear carry
--- calculate score
-182B: A9 05    lda #$05			-- 05 is the score for picking up a colonist
-182D: AA       tax				-- X = A = 05
-182E: 65 2E    adc $2e        	-- A += $2e, calculate new score
-1830: 85 2E    sta $2e      	-- store new score back to $2e
-1832: A9 00    lda #$00     	-- A = 00
-1834: 65 2F    adc $2f          -- A += $2f
-1836: 85 2F    sta $2f     		-- store score back to 2f
-1838: 20 71 17 jsr $1771     	-- calculate adding score, print score on screen
-183B: A9 03    lda #$03        	-- load 03 to A
-183D: 85 68    sta $68          -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
-183F: 60       rts				-- return
 
--- subroutine: lander explode animation
--- set color to red
-1840: A2 06    ldx #$06			-- load 06 to X, X = 06, 04, 02, 00
-1842: B5 30    lda $30, x		-- load 36, 34, 32, 30 area data to A, those are screen position of shifting ship (low byte)
-1844: 95 56    sta $56, x		-- store 36, 34, 32, 30 area data to 5c, 5a, 58, 56 area, ($56+x) are explosion color address (low byte)
-1846: B5 31    lda $31, x		-- load 37, 35, 33, 31 area data to A, those are screen position of shifting ship (high memory byte -> 1e or 1f)
-1848: 18       clc				-- clear carry
-1849: 69 78    adc #$78			-- A += 78, change the screen address into screen color address
-184B: 95 57    sta $57, x		-- store the color address to 5d, 5b, 59, 57 area ($57+x) are color address (high byte)
-184D: A9 02    lda #$02			-- A = 02, red
-184F: 81 56    sta ($56, x)		-- store the red color into given color address
-1851: CA       dex				-- X--
-1852: CA       dex				-- X--
-1853: 10 ED    bpl $1842		-- if X is not zero, then go back to 1842, when we finish setting the four color address to red, continue
--- set volume and update ship occupy area
-1855: A9 0F    lda #$0f			-- load 0f to A, 0f is the volume we want to play
-1857: 8D 0E 90 sta $900e        -- set the volume to 0f
-185A: A0 17    ldy #$17			-- load 17 into Y, 17 is the pointer of 1cb5 area
-185C: A2 06    ldx #$06			-- load 06 into X, X = 06, 04, 02, 00
-185E: B9 B5 1C lda $1cb5, y		-- load 1cb5 area data to A, those are screen position of shifting ship
-1861: 81 30    sta ($30, x)		-- store into screen where the ship is -> (update ship occupy area) 
-1863: 88       dey				-- Y--
-1864: CA       dex				-- X--
-1865: CA       dex				-- X--
-1866: 10 F6    bpl $185e		-- if Y is not zero, then go back to 185E, when we finish updating the ship occupy area, continue
--- play explosion sound (noise)
-1868: A2 14    ldx #$14			-- load 14 into X, X = 14, 12, 10, 0e, 0c, 0a, 08, 06, 04, 02, 00
+1814: A6 1F    ldx $1f
+1816: B5 18    lda $18, x
+1818: D0 25    bne $183f
+181A: A9 01    lda #$01
+181C: 95 18    sta $18, x
+181E: 06 1F    asl $1f
+1820: A6 1F    ldx $1f
+1822: A9 00    lda #$00
+1824: 81 50    sta ($50, x)
+1826: A9 07    lda #$07
+1828: 81 20    sta ($20, x)
+182A: 18       clc
+182B: A9 05    lda #$05                 -- 05 - picking up colonist
+182D: AA       tax                      -- X = A = 05
+182E: 65 2E    adc $2e                  -- A += $2e, calculate new score
+1830: 85 2E    sta $2e                  -- store new score back to $20
+1832: A9 00    lda #$00                 -- A = 00 ???
+1834: 65 2F    adc $2f                  -- A += $2f ??? so what is 2f
+1836: 85 2F    sta $2f                  -- store back to 2f ???
+1838: 20 71 17 jsr $1771                -- calculate adding score, print score on screen
+183B: A9 03    lda #$03                 -- load 03 to A
+183D: 85 68    sta $68                  -- $68 = 03, when play music, play 1be0 music, docking success or picking up colonist success.
+183F: 60       rts
+1840: A2 06    ldx #$06
+1842: B5 30    lda $30, x
+1844: 95 56    sta $56, x
+1846: B5 31    lda $31, x
+1848: 18       clc
+1849: 69 78    adc #$78
+184B: 95 57    sta $57, x
+184D: A9 02    lda #$02
+184F: 81 56    sta ($56, x)
+1851: CA       dex
+1852: CA       dex
+1853: 10 ED    bpl $1842
+1855: A9 0F    lda #$0f
+1857: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
+185A: A0 17    ldy #$17
+185C: A2 06    ldx #$06
+185E: B9 B5 1C lda $1cb5, y
+1861: 81 30    sta ($30, x)
+1863: 88       dey
+1864: CA       dex
+1865: CA       dex
+1866: 10 F6    bpl $185e
+1868: A2 14    ldx #$14
 186A: 20 42 17 jsr $1742        -- jump to $1742, load $9004 to A until zero, TV raster beam line; return until 9004 is zero
-186D: 8A       txa				-- transfer A to X
-186E: 18       clc				-- clear carry
-186F: 69 A5    adc #$a5			-- A += A5, A = B9
-1871: 85 1E    sta $1e			-- store B9 to $1e
-1873: 98       tya				-- transfer A to Y
-1874: 65 1E    adc $1e			-- A += $1e
-1876: 8D 0D 90 sta $900d		-- store A to $900d, noise
-1879: CA       dex				-- X--
-187A: 10 EE    bpl $186a		-- if x is positive, then go back to 186A, when we finish setting the noise, continue 
-187C: 98       tya				-- transfer A to Y
-187D: 10 DD    bpl $185c		-- if Y is positive, then go back to 185C
--- set color back to black
-187F: A2 06    ldx #$06			-- load 06 into X, X = 06, 04, 02, 00
-1881: A9 01    lda #$01			-- load 01 into A
-1883: 81 56    sta ($56, x)		-- store 01 into color address(where ship explode area)
-1885: CA       dex				-- X--
-1886: CA       dex				-- X--
-1887: 10 F8    bpl $1881		-- if X is positive, then go back to 1881, when we finish setting the color back to black, continue
--- set volume back to 09 and no more noise sound!
-1889: A9 00    lda #$00			-- load 00 into A
-188B: 8D 0D 90 sta $900d		-- store 00 into $900d, noise
-188E: A9 09    lda #$09			-- load 09 into A
-1890: 8D 0E 90 sta $900e        -- set volume to 9, no noise played anymore
-1893: 60       rts				-- return
+186D: 8A       txa
+186E: 18       clc
+186F: 69 A5    adc #$a5
+1871: 85 1E    sta $1e
+1873: 98       tya
+1874: 65 1E    adc $1e
+1876: 8D 0D 90 sta $900d
+1879: CA       dex
+187A: 10 EE    bpl $186a
+187C: 98       tya
+187D: 10 DD    bpl $185c
+187F: A2 06    ldx #$06
+1881: A9 01    lda #$01
+1883: 81 56    sta ($56, x)
+1885: CA       dex
+1886: CA       dex
+1887: 10 F8    bpl $1881
+1889: A9 00    lda #$00
+188B: 8D 0D 90 sta $900d$69
+188E: A9 09    lda #$09
+1890: 8D 0E 90 sta $900e        -- bit 0-3 are volume, 4-7 are auxiliary color
+1893: 60       rts
 
--- subroutine: set sound to be played
-1894: A4 68    ldy $68          -- $68 - current music that's to be played
+-- subroutine:  play sounds
+1894: A4 68    ldy $68          -- $68 - current music that's to play
 1896: F0 58    beq $18f0        -- if 0 - no audio pointer, clear sound register 
-1898: 88       dey              -- change pointe to sound that be played next
-1899: 98       tya              -- A = Y 
+1898: 88       dey              -- change pointer to play next 
+1899: 98       tya              -- A = Y
 189A: 0A       asl a            -- A <<= 1
 189B: A8       tay              -- Y = A
-189C: A5 13    lda $13          -- load the number of cycles the audio will be played 
-189E: D0 4D    bne $18ed        -- if not zero, then go to 18ed <-> keep playing high frequency sound
-18A0: 8D 0A 90 sta $900a        -- reset low frequency
-18A3: 8D 0B 90 sta $900b        -- reset medium frequency
-18A6: 8D 0C 90 sta $900c        -- reset high frequency
-18A9: B9 60 00 lda $0060, y     -- load new music
+189C: A5 13    lda $13          -- load high frequency
+189E: D0 4D    bne $18ed        -- if not zero, then go to 18ed
+-- play sounds
+18A0: 8D 0A 90 sta $900a        -- set low frequency
+18A3: 8D 0B 90 sta $900b        -- set medium frequency
+18A6: 8D 0C 90 sta $900c        -- set high frequency
+-- 
+18A9: B9 60 00 lda $0060, y     -- pointer to music address
 18AC: 85 69    sta $69          -- store as current music to play 1
-18AE: B9 61 00 lda $0061, y     -- load new music
+18AE: B9 61 00 lda $0061, y     -- pointer to music address
 18B1: 85 6A    sta $6a          -- store as current music to play 2
-18B3: A4 12    ldy $12          -- Y = the offset within the music address
-18B5: B1 69    lda ($69), y     -- load one byte from the current music address
-18B7: F0 42    beq $18fb        -- if the there is no music to be played in the current music track, clear music
-18B9: 10 04    bpl $18bf        -- if greater than 0
+18B3: A4 12    ldy $12          -- Y = medium freuqnecy
+18B5: B1 69    lda ($69), y     -- switch audio pointer 
+18B7: F0 42    beq $18fb        -- if audio pointer is 0, clear audio
+18B9: 10 04    bpl $18bf        -- if greater than 0, select audio pointer
 18BB: A0 00    ldy #$00         -- Y = 00
--- set the number of cycle the music will be played
-18BD: B1 69    lda ($69), y     -- load the beginning byte from the current music address <-> the number of cycles music played
-18BF: 85 13    sta $13          -- load new counter for the music that need to be played
--- set low frequency
+18BD: B1 69    lda ($69), y     -- set audio pointer  
+18BF: 85 13    sta $13          -- store back to high frequency
 18C1: C8       iny              -- Y += 1
-18C2: B1 69    lda ($69), y     -- load mask to check  data frequency
-18C4: 85 1E    sta $1e          -- store mask that checks data frequency
-18C6: C8       iny              -- Y += 1 
-18C7: A9 01    lda #$01         -- skip non low frequency data
-18C9: 25 1E    and $1e          -- .
-18CB: F0 06    beq $18d3        -- .
-18CD: B1 69    lda ($69), y     -- load low frequency music data
-18CF: 8D 0A 90 sta $900a        -- set low frequency music data
--- set medium frequency
-18D2: C8       iny              -- 
-18D3: A9 02    lda #$02         -- skip non high frequency data
-18D5: 25 1E    and $1e          -- .
-18D7: F0 06    beq $18df        -- .
-18D9: B1 69    lda ($69), y     -- load medium frequency music data
-18DB: 8D 0B 90 sta $900b        -- set medium frequency music data
--- set high frequency 
+18C2: B1 69    lda ($69), y     -- A = current music to play, choosed from audio 1,2,3,4 -> address 60 - 67
+18C4: 85 1E    sta $1e          -- $1e = 
+18C6: C8       iny              -- Y += 1
+18C7: A9 01    lda #$01         -- A = 01
+18C9: 25 1E    and $1e          -- $1e = 
+18CB: F0 06    beq $18d3        -- 
+18CD: B1 69    lda ($69), y     -- 
+18CF: 8D 0A 90 sta $900a        -- 
+18D2: C8       iny              --
+18D3: A9 02    lda #$02         -- A = 02
+18D5: 25 1E    and $1e          --
+18D7: F0 06    beq $18df        --
+18D9: B1 69    lda ($69), y     -- 
+18DB: 8D 0B 90 sta $900b        -- 
 18DE: C8       iny              -- 
-18DF: A9 04    lda #$04         -- skip non high frequency data
-18E1: 25 1E    and $1e          -- .
-18E3: F0 06    beq $18eb        -- .
-18E5: B1 69    lda ($69), y     -- load high frequency music data
-18E7: 8D 0C 90 sta $900c        -- set high frequency music data
-18EA: C8       iny              -- Y++ 
-18EB: 84 12    sty $12          -- increase music data pointer 
--- play high frequency audio
-18ED: C6 13    dec $13          -- decrease the counter of music cycles 
-18EF: 60       rts              -- return 
+18DF: A9 04    lda #$04         -- A = 04
+18E1: 25 1E    and $1e          -- 
+18E3: F0 06    beq $18eb        -- 
+18E5: B1 69    lda ($69), y     -- 
+18E7: 8D 0C 90 sta $900c        -- 
+18EA: C8       iny              -- Y ++ 
+18EB: 84 12    sty $12          -- 
+--
+18ED: C6 13    dec $13          -- $13 -= 1
+18EF: 60       rts              --
+
+
 -- clear sound registers
 18F0: A9 00    lda #$00         -- load 0 to A
 18F2: 8D 0A 90 sta $900a        -- clear 900a   
@@ -1430,69 +1378,59 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 18F8: 8D 0C 90 sta $900c        -- clear 900c
 18FB: 85 68    sta $68          -- clear 68 -> audio pointer
 18FD: 85 12    sta $12          -- clear 12
-18FF: 60       rts				-- return
+18FF: 60       rts
 
 
 -- subroutine: move orbital docking pad
-1900: A5 4D    lda $4d                  -- 4d: indicator whether orbital docking pad moves in this turn
-1902: 29 01    and #$01                 -- check if 4d indicator is odd
-1904: D0 55    bne $195b                -- if 4d is odd, skip this time, otherwise move
--- check if the orbital's position needs to be reset
-1906: A5 3E    lda $3e                  -- orbital left position on screen_low 
-1908: C9 2F    cmp #$2f                 -- maximum position <-> reaches the right most position
-190A: D0 08    bne $1914                -- not equal, no reset
--- reset the orbital to the outer left of the screen 
-190C: A9 1D    lda #$1d                 -- 3F: orbital left position on screen_high = 1D, left outside the screen
-190E: 85 3F    sta $3f                  -- store the high byte of the orbital position
-1910: A9 F0    lda #$f0                 -- 3E: orbital left position on screen_high = F0, left outside the screen
-1912: 85 3E    sta $3e                  -- store the low byte of the orbital position
--- update the orbital docking pad
-1914: A5 4C    lda $4c                  -- load 4c into A
-1916: 29 07    and #$07                 -- and 07 
-1918: D0 2E    bne $1948                -- if not 0, goto 1948, shifts right
-191A: A0 00    ldy #$00                 -- Y = 0
-191C: A9 00    lda #$00                 -- A = 0
-191E: 91 3E    sta ($3e), y             -- remove the trailing character from last update
-1920: E6 3E    inc $3e                  -- orbital left position on screen_low 00-2E, F0-FF
-1922: D0 02    bne $1926                -- only update 00-2E, F0-FF; update 1E or 1D when overflow
-1924: E6 3F    inc $3f                  -- orbital left position on screen_hight 1e or 1d
--- load orbital docking pad to the shifting buffer
-1926: A2 1F    ldx #$1f                 -- X = 1f
-1928: BD 90 1C lda $1c90, x				-- load left orbital docking pad 
-192B: 9D 68 1C sta $1c68, x				-- to image shifting buffer 1c68
-192E: CA       dex                      -- X -- 
-192F: 10 F7    bpl $1928                -- if X is positive, loop again
- 
-1931: A0 04    ldy #$04                 -- Y = 0x04
-1933: 98       tya                      -- A = Y = 0x04
-1934: 18       clc                      -- clear the carry
-1935: 65 3E    adc $3e                  -- add 3e to A
-1937: C9 16    cmp #$16                 -- compare with 16, the docking pad left the sereen
-1939: B0 05    bcs $1940                -- if we cannot see the pad, no need to update the screen
-
-193B: B9 B0 1C lda $1cb0, y	        	-- print new orbital docking pad parts on the screen; 1cb0 <-> orbital part characters and a space
-193E: 91 3E    sta ($3e), y             -- 3e: orbital left position on screen_low
-
+1900: A5 4D    lda $4d                  
+1902: 29 01    and #$01
+1904: D0 55    bne $195b
+1906: A5 3E    lda $3e
+1908: C9 2F    cmp #$2f
+190A: D0 08    bne $1914
+190C: A9 1D    lda #$1d
+190E: 85 3F    sta $3f
+1910: A9 F0    lda #$f0
+1912: 85 3E    sta $3e
+1914: A5 4C    lda $4c
+1916: 29 07    and #$07
+1918: D0 2E    bne $1948
+191A: A0 00    ldy #$00
+191C: A9 00    lda #$00
+191E: 91 3E    sta ($3e), y
+1920: E6 3E    inc $3e
+1922: D0 02    bne $1926
+1924: E6 3F    inc $3f
+1926: A2 1F    ldx #$1f
+1928: BD 90 1C lda $1c90, x		-- load left  orbital docking pad 
+192B: 9D 68 1C sta $1c68, x		-- to image shifting buffer 1c68
+192E: CA       dex                      -- 
+192F: 10 F7    bpl $1928
+1931: A0 04    ldy #$04
+1933: 98       tya                      -- Y = A
+1934: 18       clc                      -- 
+1935: 65 3E    adc $3e                  -- 
+1937: C9 16    cmp #$16
+1939: B0 05    bcs $1940
+193B: B9 B0 1C lda $1cb0, y	        -- 1cb0 
+193E: 91 3E    sta ($3e), y             -- 3e
 1940: 88       dey                      -- Y --
-1941: 10 F0    bpl $1933                -- if y is positive, loop again
-1943: E6 4C    inc $4c                  -- $4c++
-1945: 4C 5B 19 jmp $195b                -- goto 195b and increase 4d indicator
-
-
--- orbital docking pad image shifts right
-1948: A2 07    ldx #$07                 -- X = 07, counter of the # of updates
-194A: 5E 68 1C lsr $1c68, x             -- orbital docking pad moves right within the buffer area
-194D: 7E 70 1C ror $1c70, x             -- Rotate One Bit Right
-1950: 7E 78 1C ror $1c78, x             -- Rotate One Bit Right
-1953: 7E 80 1C ror $1c80, x             -- Rotate One Bit Right
-1956: CA       dex                      -- X--
-1957: 10 F1    bpl $194a                -- loop 8 times
-1959: E6 4C    inc $4c                  -- $4c++
-195B: E6 4D    inc $4d                  -- increase 4d indicator whether orbital docking pad moves in this turn
+1941: 10 F0    bpl $1933                
+1943: E6 4C    inc $4c
+1945: 4C 5B 19 jmp $195b
+1948: A2 07    ldx #$07
+194A: 5E 68 1C lsr $1c68, x             -- orbital docking pad move right
+194D: 7E 70 1C ror $1c70, x
+1950: 7E 78 1C ror $1c78, x
+1953: 7E 80 1C ror $1c80, x
+1956: CA       dex
+1957: 10 F1    bpl $194a
+1959: E6 4C    inc $4c
+195B: E6 4D    inc $4d
 195D: 60       rts						-- return 
 
 
--- subroutine: orbital docking pad position update
+-- subroutine: orbital docking pad  position update
 195E: A0 04    ldy #$04                 -- Y = 4 
 1960: 98       tya                      -- A = Y = 4
 1961: 18       clc                      -- clear carry 
@@ -1506,29 +1444,29 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 196F: 60       rts						-- return
 
 
--- subroutine play demo if we enter nothing.
+-- 
 1970: 20 1E EB jsr $eb1e                -- read a character from keyboard
-1973: A5 C5    lda $c5                  -- A = $c5, c5 is character pressed 
-1975: C9 40    cmp #$40                 -- compare A with 40, 40 is no key pressed
-1977: F0 07    beq $1980                -- goto 1980 if no key pressed, play the demo
-1979: A9 00    lda #$00                 -- if any key is pressed, A = 00
-197B: 85 5E    sta $5e                  -- clear 5e -> the demo counter
-197D: 4C 4B 10 jmp $104b                -- game reload
--- no key pressed, play the demo 
-1980: A5 6D    lda $6d                  -- load 6d into A, 6d counter for how long this opreation last
-1982: D0 12    bne $1996                -- if 6d is not zero, goto 1996
-1984: E6 6E    inc $6e                  -- 6e++
-1986: A6 6E    ldx $6e                  -- load 6e into X, 6e is index counter for reading demo operation in 1d20 area
-1988: BD 20 1D lda $1d20, x             -- load 1d20 + X into A, how long should we run this opreation
-198B: 85 6D    sta $6d                  -- store A to 6d, 6d counter for how long this opreation last
-198D: E8       inx                      -- X++
-198E: BD 20 1D lda $1d20, x             -- load 1d20 + X into A, now is the opreation code
-1991: 86 6E    stx $6e                  -- store X to 6e, 6e is index counter for reading demo operation in 1d20 area
-1993: 4C DE 12 jmp $12de                -- instead reading input from c5, load the pre-built lander control data from 1d20
-1996: C6 6D    dec $6d                  -- 6d --
-1998: A6 6E    ldx $6e                  -- load 6e into X
-199A: BD 20 1D lda $1d20, x             -- instead reading input from c5, load the pre-built lander control data from 1d20
-199D: 4C DE 12 jmp $12de                -- instead reading input from c5, load the pre-built lander control data from 1d20
+1973: A5 C5    lda $c5                  -- A = $c5 = 
+1975: C9 40    cmp #$40                 -- if no character is pressed
+1977: F0 07    beq $1980                -- 1980
+1979: A9 00    lda #$00                 -- A = 00
+197B: 85 5E    sta $5e                  -- 
+197D: 4C 4B 10 jmp $104b                -- 
+
+1980: A5 6D    lda $6d                  -- 
+1982: D0 12    bne $1996                -- not equal, to 1996
+1984: E6 6E    inc $6e                  -- 
+1986: A6 6E    ldx $6e                  -- 
+1988: BD 20 1D lda $1d20, x             -- 
+198B: 85 6D    sta $6d                  -- 
+198D: E8       inx                      -- 
+198E: BD 20 1D lda $1d20, x             -- 
+1991: 86 6E    stx $6e                  -- 
+1993: 4C DE 12 jmp $12de                -- 
+1996: C6 6D    dec $6d                  -- 
+1998: A6 6E    ldx $6e                  -- 
+199A: BD 20 1D lda $1d20, x             -- 
+199D: 4C DE 12 jmp $12de                -- 
 
 
 
@@ -1637,6 +1575,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1BFB: D4 03    nop $03, x
 1BFD: 02       kil
 1BFE: D0 00    bne $1c00
+
+
 
 
 -- special characters set memory area
@@ -1905,6 +1845,8 @@ FF    sta ($ff, x)
                 -- 1ca6  . X . . . . X X
                 -- 1ca7  X . . . . . . X
 
+
+
 1CA8: 00    sta ($00, x)
 1CA9: 00       brk
 1CAA: 00       brk
@@ -1914,34 +1856,22 @@ FF    sta ($ff, x)
 1CAE: 00       brk
 1CAF: 00       brk
 
--- orbital docking pad characters
-1CB0: 0D 0E 11 ora $110e        
-1CB3: 0F 
--- space 
-10
 
- 00 slo $0010
+1CB0: 0D 0E 11 ora $110e        
+1CB3: 0F 10 00 slo $0010
 1CB6: 00       brk
 1CB7: 00       brk
+
+
 1CB8: 00       brk
--- 1CB9
--- explosion stage 4: _| |_
-					  _   _
-					   | |
 1CB9: FD EE ED sbc $edee, x
-1CBC: F0
--- 1CBE 
--- explosion stage 3: four little squares
-FE    beq $1cbc
+1CBC: F0 FE    beq $1cbc
 1CBE: FB FC 
+
+
 1cc0: EC isb $ecfc, y
--- 1CC1
--- explosion stage 2: square
 1CC1: CE CD CD dec $cdcd
-1CC4: CE
--- 1CC5 
--- explosion stage 1: circle
-1CC5: D5 CA dec $cad5
+1CC4: CE D5 CA dec $cad5
 1CC7: C9 CB    cmp #$cb
 1CC9: 00       brk
 1CCA: 00       brk
@@ -1978,22 +1908,21 @@ FE    beq $1cbc
 1CF4: 1D	   ora    
 
 -- 40 - 4F
-1CF5: 00                        -- 40,
-1CF6: 10                        -- 41, speed on x axis
-1CF7: 00       brk              -- 42,
-1CF8: 10                        -- 43,
-1CF9: 80                        -- 44,
-1CFA: 00       brk              -- 45, lander horizontal acceleration indicator
-1CFB: 00       brk              -- 46, 
-1CFC: 00       brk              -- 47, lander vertical acceleration indicator
-1CFD: 00       brk              -- 48, F9-left, 00-straight up, 07-right
-1CFE: 00       brk              -- 49, FF-left, 00-straight up, 00-right
-1CFF: EF FF 00 isb $00ff        -- 4A, 
-                                -- 4B, 
-                                -- 4C, 
-1D02: 00       brk              -- 4D, 
-1D03: E3 1F    isb ($1f, x)     -- 4E, 
-                                -- 4F, 
+1CF5: 00 10    $1000, x
+1CF7: 00       brk
+1CF8: 10 80    bpl $1c7a
+1CFA: 00       brk
+1CFB: 00       brk
+1CFC: 00       brk
+1CFD: 00       brk
+1CFE: 00       brk
+1CFF: EF FF 00 isb $00ff
+
+
+
+1D02: 00       brk
+1D03: E3 1F    isb ($1f, x)
+
 
 1D05: 87 81    sax $81          -- G, A
 1D07: 8D 85 A0 sta $a085        -- M, E, " "
@@ -2012,8 +1941,6 @@ FE    beq $1cbc
 1D1D: 00       brk              -- first character of the user name
 1D1E: 00       brk              -- second character of the user name
 1D1F: 00       brk              -- third charactter of the user name
-
--- demo data -> control ship data storage area
 1D20: 00       brk
 1D21: 02       kil
 1D22: 20 01 11 jsr $1101
@@ -2060,3 +1987,4 @@ FE    beq $1cbc
 1D75: 10 20    bpl $1d97
 1D77: 10 40    bpl $1db9
 1D79: 10 20    bpl $1d9b
+

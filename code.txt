@@ -514,25 +514,25 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1361: 60       rts                      -- return
 
 
--- subroutine
+-- subroutine: lander movement
 -- if delete this part, ship won't move
 1362: AD 0D 90 lda $900d                -- load noise
 1365: F0 1A    beq $1381                -- if no noise, go to 1381
 1367: 18       clc                      -- clear the carry
 -- 
-1368: A5 48    lda $48                  -- $48 = 
+1368: A5 48    lda $48                  -- $48 = lander head point-to indicator: 07 -> right, 0 -> up, f9-> left 
 136A: 65 44    adc $44                  -- $44 += $48
 136C: 85 44    sta $44                  -- $44 = 80, when space is entered
 -- 
-136E: A5 49    lda $49                  -- 
-1370: 65 45    adc $45                  -- 
-1372: 85 45    sta $45                  -- 
+136E: A5 49    lda $49                  -- $49 = lander head point-to indicator: 00 -> right, 0 -> up, ff -> left
+1370: 65 45    adc $45                  -- $45 += $49
+1372: 85 45    sta $45                  -- $45
 1374: 18       clc                      -- clear the carry
 -- 
 1375: A5 4A    lda $4a                  -- 4a ???
 1377: 65 46    adc $46                  -- 
 1379: 85 46    sta $46                  -- 
-137B: A5 4B    lda $4b                  -- 4b ???
+137B: A5 4B    lda $4b                  -- 4b is always 0xff in game
 137D: 65 47    adc $47                  -- 
 137F: 85 47    sta $47                  -- 
 --
@@ -586,15 +586,15 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 13DC: 60       rts
 
 
-- subroutine game logic part?
+- subroutine: game logic part?
 13DD: A5 41    lda $41			-- load 41 into a
 13DF: 4A       lsr a			-- A = A >> 1
 13E0: 4A       lsr a			-- A = A >> 1
 13E1: 4A       lsr a			-- A = A >> 1
 13E2: C5 38    cmp $38			-- compare A with 38, $38 is lander x position -> x coordinate in [0,14]
 13E4: 85 38    sta $38			-- store A into 38
-13E6: F0 1E    beq $1406
-13E8: 90 0E    bcc $13f8
+13E6: F0 1E    beq $1406		-- 
+13E8: 90 0E    bcc $13f8		-- 
 13EA: A2 06    ldx #$06
 13EC: F6 30    inc $30, x
 13EE: D0 02    bne $13f2
@@ -1312,13 +1312,13 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 -- set color to red
 1840: A2 06    ldx #$06			-- load 06 to X, X = 06, 04, 02, 00
 1842: B5 30    lda $30, x		-- load 36, 34, 32, 30 area data to A, those are screen position of shifting ship (low byte)
-1844: 95 56    sta $56, x		-- store 36, 34, 32, 30 area data to 5c, 5a, 58, 56 area, ($56+x) are color address (low byte)
+1844: 95 56    sta $56, x		-- store 36, 34, 32, 30 area data to 5c, 5a, 58, 56 area, ($56+x) are explosion color address (low byte)
 1846: B5 31    lda $31, x		-- load 37, 35, 33, 31 area data to A, those are screen position of shifting ship (high memory byte -> 1e or 1f)
 1848: 18       clc				-- clear carry
 1849: 69 78    adc #$78			-- A += 78, change the screen address into screen color address
 184B: 95 57    sta $57, x		-- store the color address to 5d, 5b, 59, 57 area ($57+x) are color address (high byte)
 184D: A9 02    lda #$02			-- A = 02, red
-184F: 81 56    sta ($56, x)		-- store the read color into given color address
+184F: 81 56    sta ($56, x)		-- store the red color into given color address
 1851: CA       dex				-- X--
 1852: CA       dex				-- X--
 1853: 10 ED    bpl $1842		-- if X is not zero, then go back to 1842, when we finish setting the four color address to red, continue
@@ -1461,12 +1461,12 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1937: C9 16    cmp #$16                 -- compare with 16, the docking pad left the sereen
 1939: B0 05    bcs $1940                -- if we cannot see the pad, no need to update the screen
 
-193B: B9 B0 1C lda $1cb0, y	        	-- 1cb0, buffer area
+193B: B9 B0 1C lda $1cb0, y	        	-- print new orbital docking pad parts on the screen; 1cb0 <-> orbital part characters and a space
 193E: 91 3E    sta ($3e), y             -- 3e: orbital left position on screen_low
 
 1940: 88       dey                      -- Y --
 1941: 10 F0    bpl $1933                -- if y is positive, loop again
-1943: E6 4C    inc $4c                  -- 4c++
+1943: E6 4C    inc $4c                  -- $4c++
 1945: 4C 5B 19 jmp $195b                -- goto 195b and increase 4d indicator
 
 
@@ -1896,8 +1896,6 @@ FF    sta ($ff, x)
                 -- 1ca6  . X . . . . X X
                 -- 1ca7  X . . . . . . X
 
-
-
 1CA8: 00    sta ($00, x)
 1CA9: 00       brk
 1CAA: 00       brk
@@ -1907,18 +1905,34 @@ FF    sta ($ff, x)
 1CAE: 00       brk
 1CAF: 00       brk
 
-
+-- orbital docking pad characters
 1CB0: 0D 0E 11 ora $110e        
-1CB3: 0F 10 00 slo $0010
+1CB3: 0F 
+-- space 
+10
+
+ 00 slo $0010
 1CB6: 00       brk
 1CB7: 00       brk
 1CB8: 00       brk
+-- 1CB9
+-- explosion stage 4: _| |_
+					  _   _
+					   | |
 1CB9: FD EE ED sbc $edee, x
-1CBC: F0 FE    beq $1cbc
+1CBC: F0
+-- 1CBE 
+-- explosion stage 3: four little squares
+FE    beq $1cbc
 1CBE: FB FC 
 1cc0: EC isb $ecfc, y
+-- 1CC1
+-- explosion stage 2: square
 1CC1: CE CD CD dec $cdcd
-1CC4: CE D5 CA dec $cad5
+1CC4: CE
+-- 1CC5 
+-- explosion stage 1: circle
+1CC5: D5 CA dec $cad5
 1CC7: C9 CB    cmp #$cb
 1CC9: 00       brk
 1CCA: 00       brk

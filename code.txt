@@ -523,10 +523,10 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1368: A5 48    lda $48                  -- $48 = lander head point-to indicator: 07 -> right, 0 -> up, f9-> left 
 136A: 65 44    adc $44                  -- $44 += $48
 136C: 85 44    sta $44                  -- $44 = 80, when space is entered
--- 
+--          
 136E: A5 49    lda $49                  -- $49 = lander head point-to indicator: 00 -> right, 0 -> up, ff -> left
 1370: 65 45    adc $45                  -- $45 += $49
-1372: 85 45    sta $45                  -- $45
+1372: 85 45    sta $45                  -- $45 
 1374: 18       clc                      -- clear the carry
 -- 
 1375: A5 4A    lda $4a                  -- 4a ???
@@ -586,17 +586,17 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 13DC: 60       rts
 
 
-- subroutine: game logic part?
-13DD: A5 41    lda $41			-- load 41 into a
+- subroutine: game logic part
+13DD: A5 41    lda $41			-- load 41 into a, 41 is x position of the lander on screen
 13DF: 4A       lsr a			-- A = A >> 1
 13E0: 4A       lsr a			-- A = A >> 1
 13E1: 4A       lsr a			-- A = A >> 1
 13E2: C5 38    cmp $38			-- compare A with 38, $38 is lander x position -> x coordinate in [0,14]
 13E4: 85 38    sta $38			-- store A into 38
-13E6: F0 1E    beq $1406		-- 
-13E8: 90 0E    bcc $13f8		-- 
-13EA: A2 06    ldx #$06
-13EC: F6 30    inc $30, x
+13E6: F0 1E    beq $1406		-- if $41 >> 3 == $38, means lander is not moving on x axis, go to 1406
+13E8: 90 0E    bcc $13f8		-- if x position smaller than pervious position(move left), go to 13f8
+13EA: A2 06    ldx #$06			-- else deal with x position larger than pervious position(move right)
+13EC: F6 30    inc $30, x		-- 
 13EE: D0 02    bne $13f2
 13F0: F6 31    inc $31, x
 13F2: CA       dex
@@ -611,6 +611,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1402: CA       dex
 1403: CA       dex
 1404: 10 F4    bpl $13fa
+-- the lander is not moving in horizontal direction
 1406: A5 43    lda $43
 1408: 4A       lsr a
 1409: 4A       lsr a

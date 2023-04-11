@@ -595,6 +595,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 
 
 - subroutine: game logic part
+-- check the horizontal moving of the lander
 13DD: A5 41    lda $41			-- load 41 into a, 41 is x position of the lander on screen
 13DF: 4A       lsr a			-- A = A >> 1
 13E0: 4A       lsr a			-- A = A >> 1
@@ -603,78 +604,83 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 13E4: 85 38    sta $38			-- store A into 38
 13E6: F0 1E    beq $1406		-- if $41 >> 3 == $38, means lander is not moving on x axis, go to 1406
 13E8: 90 0E    bcc $13f8		-- if x position smaller than pervious position(move left), go to 13f8
+-- lander move right
 13EA: A2 06    ldx #$06			-- else deal with x position larger than pervious position(move right)
-13EC: F6 30    inc $30, x		-- 
-13EE: D0 02    bne $13f2
-13F0: F6 31    inc $31, x
-13F2: CA       dex
-13F3: CA       dex
-13F4: 10 F6    bpl $13ec
-13F6: D0 0E    bne $1406
-13F8: A2 06    ldx #$06
-13FA: B5 30    lda $30, x
-13FC: D0 02    bne $1400
-13FE: D6 31    dec $31, x
-1400: D6 30    dec $30, x
-1402: CA       dex
-1403: CA       dex
-1404: 10 F4    bpl $13fa
--- the lander is not moving in horizontal direction
-1406: A5 43    lda $43
-1408: 4A       lsr a
-1409: 4A       lsr a
-140A: 4A       lsr a
-140B: C5 39    cmp $39
-140D: 85 39    sta $39
-140F: F0 26    beq $1437
-1411: 90 13    bcc $1426
-1413: A2 06    ldx #$06
-1415: A9 16    lda #$16
-1417: 18       clc
-1418: 75 30    adc $30, x
-141A: 95 30    sta $30, x
-141C: 90 02    bcc $1420
-141E: F6 31    inc $31, x
-1420: CA       dex
-1421: CA       dex
-1422: 10 F1    bpl $1415
-1424: D0 11    bne $1437
-1426: A2 06    ldx #$06
-1428: B5 30    lda $30, x
-142A: 38       sec
-142B: E9 16    sbc #$16
-142D: 95 30    sta $30, x
-142F: B0 02    bcs $1433
-1431: D6 31    dec $31, x
-1433: CA       dex
-1434: CA       dex
-1435: 10 F1    bpl $1428
-1437: A5 43    lda $43
-1439: 29 07    and #$07
-143B: 09 08    ora #$08
-143D: AA       tax
-143E: A9 07    lda #$07
-1440: 85 1E    sta $1e
-1442: A4 3A    ldy $3a
-1444: B9 28 1C lda $1c28, y
-1447: CA       dex
-1448: 9D 08 1C sta $1c08, x			-- 1c08 <-> 1c28
-144B: 88       dey
-144C: C6 1E    dec $1e
-144E: 10 F4    bpl $1444
-1450: A5 41    lda $41
-1452: 29 07    and #$07
-1454: A8       tay
-1455: F0 14    beq $146b
-1457: A2 07    ldx #$07
-1459: 5E 08 1C lsr $1c08, x
-145C: 7E 18 1C ror $1c18, x
-145F: 5E 10 1C lsr $1c10, x
-1462: 7E 20 1C ror $1c20, x
-1465: CA       dex
-1466: 10 F1    bpl $1459
-1468: 88       dey
-1469: D0 EC    bne $1457
+13EC: F6 30    inc $30, x		-- increase shifting ship part
+13EE: D0 02    bne $13f2		-- if not zero, go to 13f2
+13F0: F6 31    inc $31, x		-- increase shifting ship part
+13F2: CA       dex				-- decrease x
+13F3: CA       dex				-- decrease x
+13F4: 10 F6    bpl $13ec		-- loop til x < 0
+13F6: D0 0E    bne $1406		-- if not zero, go to 1406
+-- lander move left
+13F8: A2 06    ldx #$06			-- load 6 into x. x is a counter
+13FA: B5 30    lda $30, x		-- load 30+x into a
+13FC: D0 02    bne $1400		-- if not zero, go to 1400, no action needed on shifting ship
+13FE: D6 31    dec $31, x		-- decrease 31+x, modify shifting ship part
+1400: D6 30    dec $30, x		-- decrease 30+x, modify shifting ship part
+1402: CA       dex				-- decrease x
+1403: CA       dex				-- decrease x
+1404: 10 F4    bpl $13fa		-- loop til x < 0
+-- check the vertical moving of the lander
+1406: A5 43    lda $43			-- load 43 into a, 43 is y position of the lander on screen
+1408: 4A       lsr a			-- A = A >> 1
+1409: 4A       lsr a			-- A = A >> 1
+140A: 4A       lsr a			-- A = A >> 1
+140B: C5 39    cmp $39			-- compare A with 39, $39 is lander y position -> y coordinate in [0,14]
+140D: 85 39    sta $39			-- store A into 39
+140F: F0 26    beq $1437		-- if $43 >> 3 == $39, means lander is not moving on y axis, go to 1437
+1411: 90 13    bcc $1426		-- if new y position smaller than pervious position(move up), go to 13f8
+-- lander move down
+1413: A2 06    ldx #$06			-- else deal with y position larger than pervious position(move down)
+1415: A9 16    lda #$16			-- load 16 into a
+1417: 18       clc				-- clear carry
+1418: 75 30    adc $30, x		-- add 30+x into a
+141A: 95 30    sta $30, x		-- store a back into 30+x
+141C: 90 02    bcc $1420		-- if no carry, go to 1420
+141E: F6 31    inc $31, x		-- increase 31+x, modify shifting ship part
+1420: CA       dex				-- decrease x
+1421: CA       dex				-- decrease x
+1422: 10 F1    bpl $1415		-- loop til x < 0
+1424: D0 11    bne $1437		-- if x not zero, go to 1437
+-- lander move up
+1426: A2 06    ldx #$06			-- load 6 into x. x is a counter
+1428: B5 30    lda $30, x		-- load 30+x into a, 30 area is the shifting ship part
+142A: 38       sec				-- set carry
+142B: E9 16    sbc #$16			-- subtract 16 from a
+142D: 95 30    sta $30, x		-- store a back into 30+x
+142F: B0 02    bcs $1433		-- if we have carry, go to 1433, no action needed on shifting ship
+1431: D6 31    dec $31, x		-- decrease 31+x, modify shifting ship part
+1433: CA       dex				-- decrease x
+1434: CA       dex				-- decrease x
+1435: 10 F1    bpl $1428		-- loop til x < 0
+-- both x and y position of the lander are not changed
+1437: A5 43    lda $43			-- load 43 into a, 43 is y position of the lander on screen (vertical)
+1439: 29 07    and #$07			-- a = a & 0b0111
+143B: 09 08    ora #$08			-- a = a || 0b1000
+143D: AA       tax				-- x = a
+143E: A9 07    lda #$07			-- load 7 into a
+1440: 85 1E    sta $1e			-- store a into 1e
+1442: A4 3A    ldy $3a			-- load 3a into y, 3a is lander orientation + fuel 
+1444: B9 28 1C lda $1c28, y		-- load 1c28+y into a
+1447: CA       dex				-- decrease x
+1448: 9D 08 1C sta $1c08, x		-- 1c08 <-> 1c28, buffer modify area
+144B: 88       dey				-- decrease y
+144C: C6 1E    dec $1e			-- decrease 1e
+144E: 10 F4    bpl $1444		-- loop til 1e < 0, now all shifting lander part are stored in 1c08 area
+1450: A5 41    lda $41				-- load 41 into a, 41 is x position of the lander on screen (horizontal)
+1452: 29 07    and #$07			-- a = a & 0b0111
+1454: A8       tay				-- y = a
+1455: F0 14    beq $146b		-- if a == 0, goto 146b, else -> a != 0, continue
+1457: A2 07    ldx #$07            	-- x = 07             
+1459: 5E 08 1C lsr $1c08, x        	-- shift right 1c08, x
+145C: 7E 18 1C ror $1c18, x      	-- rotate right 1c18, x   
+145F: 5E 10 1C lsr $1c10, x			-- shift right 1c10, x
+1462: 7E 20 1C ror $1c20, x			-- rotate right 1c20, x
+1465: CA       dex					-- x = x - 1
+1466: 10 F1    bpl $1459			-- if x >= 0, goto 1459, else -> x < 0, continue
+1468: 88       dey					-- y = y - 1
+1469: D0 EC    bne $1457			-- if y != 0, goto 1457, else -> y == 0, continue
 146B: A2 06    ldx #$06				-- x = 06, will become 04, 02, 00 
 146D: A0 04    ldy #$04				-- y = 04 -> counter for four screen position of shifting ship
 
@@ -682,8 +688,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1471: F0 23    beq $1496			-- if nothing there, goto 1496, else -> something is there, check what it is
 1473: C9 E3    cmp #$e3             -- now we hit something! what is it? First compare with e3 -> e3 is safe landing ground, 
 1475: D0 07    bne $147e			-- if not safe landing ground, goto 147e, else -> safe landing ground, check if it is colonist
-1477: 98       tya                  -- if it is safe landing ground -> 
-1478: 05 1D    ora $1d
+1477: 98       tya                  -- if it is safe landing ground -> put y into a
+1478: 05 1D    ora $1d				-- or 1d
 
 -- event: ship landed at ground
 147A: 85 1D    sta $1d              -- ship landed at ground -> set 04 into 1d
@@ -1482,9 +1488,9 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 -- orbital docking pad image shifts right
 1948: A2 07    ldx #$07                 -- X = 07, counter of the # of updates
 194A: 5E 68 1C lsr $1c68, x             -- orbital docking pad moves right within the buffer area
-194D: 7E 70 1C ror $1c70, x             -- Rotate One Bit Right
-1950: 7E 78 1C ror $1c78, x             -- Rotate One Bit Right
-1953: 7E 80 1C ror $1c80, x             -- Rotate One Bit Right
+194D: 7E 70 1C ror $1c70, x             -- Rotate Bit Right
+1950: 7E 78 1C ror $1c78, x             -- Rotate Bit Right
+1953: 7E 80 1C ror $1c80, x             -- Rotate Bit Right
 1956: CA       dex                      -- X--
 1957: 10 F1    bpl $194a                -- loop 8 times
 1959: E6 4C    inc $4c                  -- $4c++

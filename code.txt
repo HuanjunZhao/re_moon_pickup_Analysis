@@ -1434,14 +1434,13 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 190A: D0 08    bne $1914                -- not equal, no reset
 -- reset the orbital to the outer left of the screen 
 190C: A9 1D    lda #$1d                 -- 3F: orbital left position on screen_high = 1D, left outside the screen
-190E: 85 3F    sta $3f                  -- .
+190E: 85 3F    sta $3f                  -- store the high byte of the orbital position
 1910: A9 F0    lda #$f0                 -- 3E: orbital left position on screen_high = F0, left outside the screen
-1912: 85 3E    sta $3e                  -- .
+1912: 85 3E    sta $3e                  -- store the low byte of the orbital position
 -- update the orbital docking pad
-1914: A5 4C    lda $4c                  -- 
-1916: 29 07    and #$07                 -- 
-1918: D0 2E    bne $1948                -- 
--- 
+1914: A5 4C    lda $4c                  -- load 4c into A
+1916: 29 07    and #$07                 -- and 07 
+1918: D0 2E    bne $1948                -- if not 0, goto 1948, shifts right
 191A: A0 00    ldy #$00                 -- Y = 0
 191C: A9 00    lda #$00                 -- A = 0
 191E: 91 3E    sta ($3e), y             -- remove the trailing character from last update
@@ -1450,40 +1449,38 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1924: E6 3F    inc $3f                  -- orbital left position on screen_hight 1e or 1d
 -- load orbital docking pad to the shifting buffer
 1926: A2 1F    ldx #$1f                 -- X = 1f
-1928: BD 90 1C lda $1c90, x		-- load left orbital docking pad 
-192B: 9D 68 1C sta $1c68, x		-- to image shifting buffer 1c68
+1928: BD 90 1C lda $1c90, x				-- load left orbital docking pad 
+192B: 9D 68 1C sta $1c68, x				-- to image shifting buffer 1c68
 192E: CA       dex                      -- X -- 
-192F: 10 F7    bpl $1928                -- loop
-
--- 
+192F: 10 F7    bpl $1928                -- if X is positive, loop again
+ 
 1931: A0 04    ldy #$04                 -- Y = 0x04
 1933: 98       tya                      -- A = Y = 0x04
 1934: 18       clc                      -- clear the carry
-1935: 65 3E    adc $3e                  -- 
-1937: C9 16    cmp #$16                 -- 
-1939: B0 05    bcs $1940                -- 
+1935: 65 3E    adc $3e                  -- add 3e to A
+1937: C9 16    cmp #$16                 -- compare with 16, the docking pad left the sereen
+1939: B0 05    bcs $1940                -- if we cannot see the pad, no need to update the screen
 
-193B: B9 B0 1C lda $1cb0, y	        -- 1cb0 
+193B: B9 B0 1C lda $1cb0, y	        	-- 1cb0, buffer area
 193E: 91 3E    sta ($3e), y             -- 3e: orbital left position on screen_low
 
 1940: 88       dey                      -- Y --
-1941: 10 F0    bpl $1933                -- 
-1943: E6 4C    inc $4c                  -- 
-1945: 4C 5B 19 jmp $195b                -- 
+1941: 10 F0    bpl $1933                -- if y is positive, loop again
+1943: E6 4C    inc $4c                  -- 4c++
+1945: 4C 5B 19 jmp $195b                -- goto 195b and increase 4d indicator
 
 
 -- orbital docking pad image shifts right
 1948: A2 07    ldx #$07                 -- X = 07, counter of the # of updates
 194A: 5E 68 1C lsr $1c68, x             -- orbital docking pad moves right within the buffer area
-194D: 7E 70 1C ror $1c70, x             -- .
-1950: 7E 78 1C ror $1c78, x             -- .
-1953: 7E 80 1C ror $1c80, x             -- .
+194D: 7E 70 1C ror $1c70, x             -- Rotate One Bit Right
+1950: 7E 78 1C ror $1c78, x             -- Rotate One Bit Right
+1953: 7E 80 1C ror $1c80, x             -- Rotate One Bit Right
 1956: CA       dex                      -- X--
 1957: 10 F1    bpl $194a                -- loop 8 times
--- 
-1959: E6 4C    inc $4c                  -- 
+1959: E6 4C    inc $4c                  -- $4c++
 195B: E6 4D    inc $4d                  -- increase 4d indicator whether orbital docking pad moves in this turn
-195D: 60       rts			-- return 
+195D: 60       rts						-- return 
 
 
 -- subroutine: orbital docking pad position update
@@ -1496,8 +1493,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1968: A9 00    lda #$00                 -- A = 0
 196A: 91 3E    sta ($3e), y             -- store A to 3e, Y offset
 196C: 88       dey                      -- Y -- 
-196D: 10 F1    bpl $1960		-- if y is not zero, then go back to check the next colonist
-196F: 60       rts			-- return
+196D: 10 F1    bpl $1960				-- if y is not zero, then go back to check the next colonist
+196F: 60       rts						-- return
 
 
 -- subroutine play demo if we enter nothing.

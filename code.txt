@@ -1,4 +1,6 @@
 Huanjun Zhao 30102350
+
+-- SEE EXCEL FOR ALL EXPLAINATION --
 b0-b9 is special char set for 0-9
 81-9A is special char set for A-Z
 Tested by b@1e00= x (x is map address)
@@ -109,19 +111,19 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1074: 20 90 17 jsr $1790        -- clear the sreen, put up colonists and landers, and set colonists color, load score
 1077: 20 D0 17 jsr $17d0        -- game initialization
 
--- main game loop 	--------------------------------------------------------------------------------------------------------------------|
-107A: 20 94 18 jsr $1894        -- play sound according last set Y value in last loop													|
-107D: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line							|
-1080: 20 A9 14 jsr $14a9		-- update ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels						|
-1083: 20 DD 13 jsr $13dd		-- game logic																							|
-1086: 20 00 19 jsr $1900		-- 1900: move orbital docking pad																		|						
-1089: 20 FB 17 jsr $17fb		-- 17fb: switch which colonist hands up																	|									
-108C: 20 C7 12 jsr $12c7        -- 12c7: get keyboard input and update lander 															|
-108F: A5 1D    lda $1d          -- check if lander exploded, lander destory indicator, 00 means lander good, 80 means lander dead.		|
-1091: F0 03    beq $1096        -- if 00, lander good, jump to 1096																		|						
-1093: 4C BD 11 jmp $11bd        -- if not 00, something happened. check lander status, and trigger corresponding events					|
-1096: 20 62 13 jsr $1362        -- user can still use this subroutine to control lander													|
-1099: 4C 7A 10 jmp $107a        -- end of game event loop	----------------------------------------------------------------------------|
+-- main game loop 	----------------------------------------------------------------------------------------------------------------|
+107A: 20 94 18 jsr $1894        -- play sound according last set Y value in last loop							|
+107D: 20 42 17 jsr $1742        -- jump to subroutine $1742, load $9004 to A until zero, TV raster beam line				|
+1080: 20 A9 14 jsr $14a9		-- update ship shifting pixel, when ship is moving, it can only oucupy 4 8*8 pixels		|
+1083: 20 DD 13 jsr $13dd		-- game logic											|
+1086: 20 00 19 jsr $1900		-- 1900: move orbital docking pad								|						
+1089: 20 FB 17 jsr $17fb		-- 17fb: switch which colonist hands up								|									
+108C: 20 C7 12 jsr $12c7        -- 12c7: get keyboard input and update lander 								|
+108F: A5 1D    lda $1d          -- check if lander exploded, lander destory indicator, 00 means lander good, 80 means lander dead.	|
+1091: F0 03    beq $1096        -- if 00, lander good, jump to 1096									|						
+1093: 4C BD 11 jmp $11bd        -- if not 00, something happened. check lander status, and trigger corresponding events			|
+1096: 20 62 13 jsr $1362        -- user can still use this subroutine to control lander							|
+1099: 4C 7A 10 jmp $107a        -- end of game event loop	------------------------------------------------------------------------|
 
 -- game over 14+15 = 1e8a, 1e8a is the screen address of game over prompt
 109C: A9 1E    lda #$1e			-- jump from 1e8a -> GAME OVER!, load 1e
@@ -735,12 +737,12 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14AD: A0 1F    ldy #$1f			-- Y = 1F
 14AF: 81 30    sta ($30, x)		-- store 00 into shifting ship pixel area
 14B1: 99 08 1C sta $1c08, y		-- store a in 1c08, y position	<-------|
-14B4: 88       dey				-- Y -- 		        				|
-14B5: CA       dex				-- X --									|
-14B6: CA       dex				-- X -- 								|
-14B7: 10 F6    bpl $14af						------------------------|
+14B4: 88       dey				-- Y -- 		        |
+14B5: CA       dex				-- X --				|
+14B6: CA       dex				-- X -- 			|
+14B7: 10 F6    bpl $14af				------------------------|
 14B9: 99 08 1C sta $1c08, y		-- store at Y <--|
-14BC: 88       dey				-- Y    		 |
+14BC: 88       dey				-- Y	 |
 14BD: 10 FA    bpl $14b9		-----------------|
 14BF: 60       rts				-- return 
 
@@ -755,13 +757,13 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14CB: A9 5D    lda #$5d         -- A = 0x5d
 14CD: 85 14    sta $14          -- $14 = A = 0x5d
 14CF: A0 00    ldy #$00         -- Y = 0
-14D1: B9 1E 10 lda $101e, y     -- $(101e + Y) = A                  <------------------------
-14D4: C9 0D    cmp #$0d         -- if A == 0d, '\r' <=> 'carriage return'                   |
-14D6: F0 07    beq $14df        -- branch equal to 14df      --------------------			|
-14D8: 49 C0    eor #$c0         -- XOR  A^0xc0 -> A                 			|			|
+14D1: B9 1E 10 lda $101e, y     -- $(101e + Y) = A                  <---------------------------|
+14D4: C9 0D    cmp #$0d         -- if A == 0d, '\r' <=> 'carriage return'                   	|	
+14D6: F0 07    beq $14df        -- branch equal to 14df      --------------------		|
+14D8: 49 C0    eor #$c0         -- XOR  A^0xc0 -> A                 		|		|
 14DA: 91 14    sta ($14), y     -- store pre-built char into given screen addr  |	        |
-14DC: C8       iny              -- Y += 1                           			|           |
-14DD: D0 F2    bne $14d1        -- branch not equal                 			| -----------
+14DC: C8       iny              -- Y += 1                           		|           	|
+14DD: D0 F2    bne $14d1        -- branch not equal                 		| --------------
 14DF: A9 8B    lda #$8b         -- A = 0x8b            <-------------------------
 
 -- print "(c) 2016"	on the next line -> start at 1e8b
@@ -777,8 +779,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 14F4: 91 14    sta ($14), y     -- store pre-built char into  screen addr   |                   |
 14F6: C8       iny              -- Y += 1                                   |                   |
 14F7: D0 EC    bne $14e5        -- branch not equal to zero, ie, if Y!=0    | -------------------
-																			| 
--- print "by ANDREW GROENEVELDT" on start screen -> start at 1eb2			|
+									    | 
+-- print "by ANDREW GROENEVELDT" on start screen -> start at 1eb2	    |
 14F9: A9 B2    lda #$b2         -- A = $b2                          <--------
 14FB: 85 14    sta $14          -- $14 = A
 14FD: A0 00    ldy #$00         -- Y = 00
@@ -788,8 +790,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1506: 91 14    sta ($14), y     -- store pre-built char in screen addr  |       |
 1508: C8       iny              -- Y += 1                               |       |
 1509: D0 F4    bne $14ff        -- branch not equal, i.e, not equal 0   | -------
-																		|
--- print "high score" on start screen -> start at 1fbe					|
+									|
+-- print "high score" on start screen -> start at 1fbe			|	
 150B: A9 BE    lda #$be         -- A = be                  <-----------
 150D: 85 14    sta $14          -- $14 = A
 150F: A9 1F    lda #$1f         -- A = 1f
@@ -797,12 +799,12 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1513: A0 00    ldy #$00         -- Y = 0x00
 1515: B9 10 1D lda $1d10, y     -- $(1d10 + Y) = A    <--------------
 1518: F0 05    beq $151f        -- branch equal zero            	|    ------------
-151A: 91 14    sta ($14), y     -- store pre-built char screen addr |               |
+151A: 91 14    sta ($14), y     -- store pre-built char screen addr 	|               |
 151C: C8       iny              -- Y += 1                       	|               |
-151D: D0 F6    bne $1515        -- branch not equal zero  -----------               |
-																					|
--- print high score keeper name on start screen -> start at 1fdd					|
-151F: A9 D7    lda #$d7         -- A = 0xd7                         <----------------
+151D: D0 F6    bne $1515        -- branch not equal zero  -----------               	|
+											|
+-- print high score keeper name on start screen -> start at 1fdd			|
+151F: A9 D7    lda #$d7         -- A = 0xd7                         <--------------------
 1521: 85 14    sta $14          -- $14 = A	
 1523: A0 00    ldy #$00			-- Y = 0x00
 1525: B9 1D 1D lda $1d1d, y		-- $(1d1d + Y) = A
@@ -862,13 +864,13 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1594: 85 16    sta $16      -- $16 = A = 0
 
 -- small loop: find a ramdom position to start the map (pos has to be left of the screen)
-1596: A0 16    ldy #$16     	-- Y = 16            <-------------------------------------------
-1598: 20 BB 16 jsr $16bb    	                                                                |
-                        	-- subroutine: A = Y; Y = 0x0 if Y positive, Y = 0xff otherwise;    |
-                        	-- $14 += original Y                                                |
-                        	-- $15 += 0x0 if Y is positive, other wise 0xff                     |
-159B: CA       dex          	-- X -= 1                                                       |
-159C: 10 F8    bpl $1596    	-- branch on plus, when x from 00 to ff, exit loop --------------
+1596: A0 16    ldy #$16     	-- Y = 16            <--------------------------------------------------
+1598: 20 BB 16 jsr $16bb    	                                                                	|
+                        	-- subroutine: A = Y; Y = 0x0 if Y positive, Y = 0xff otherwise;    	|
+                        	-- $14 += original Y                                                	|
+                        	-- $15 += 0x0 if Y is positive, other wise 0xff                     	|
+159B: CA       dex          	-- X -= 1                                                       	|
+159C: 10 F8    bpl $1596    	-- branch on plus, when x from 00 to ff, exit loop ---------------------
 
 
 159E: A9 02    lda #$02     	-- A = 0x02
@@ -945,7 +947,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 161C: B0 15    bcs $1633		-- if a has carry, goto 1633
 161E: A0 16    ldy #$16			-- said, no carry, y = 16
 1620: 20 BB 16 jsr $16bb		-- find another position(16th), it has to be at the left of the screen
-1623: A9 CD    lda #$cd         -- (map started with downhill,) load downhill in A
+1623: A9 CD    lda #$cd         	-- (map started with downhill,) load downhill in A
 1625: 91 14    sta ($14), y		-- print the downhill onto the screen
 1627: A5 1E    lda $1e			-- load $1e, the random number
 1629: 4A       lsr a			-- a = $1e >> 1, a = $1e / 2
@@ -1004,8 +1006,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1690: A5 1E    lda $1e			-- load $1e, the random number
 1692: 29 40    and #$40			-- && 1000000
 1694: F0 04    beq $169a		-- value in 1e < 0b1000000, goto 169a
-1696: A9 DF    lda #$df         -- value in 1e >= 0b1000000, load df, DF is colonists standing triangle platform with facing down-left
-1698: D0 02    bne $169c     	-- goto 169c           
+1696: A9 DF    lda #$df         	-- value in 1e >= 0b1000000, load df, DF is colonists standing triangle platform with facing down-left
+1698: D0 02    bne $169c     		-- goto 169c           
 169A: A9 CD    lda #$cd			-- CD = downhill, load downhill in A
 169C: 91 14    sta ($14), y		-- print the downhill onto the screen
 169E: 20 A9 16 jsr $16a9		-- goto 16a9 and finish the map generation
@@ -1339,7 +1341,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1853: 10 ED    bpl $1842		-- if X is not zero, then go back to 1842, when we finish setting the four color address to red, continue
 -- set volume and update ship occupy area
 1855: A9 0F    lda #$0f			-- load 0f to A, 0f is the volume we want to play
-1857: 8D 0E 90 sta $900e        -- set the volume to 0f
+1857: 8D 0E 90 sta $900e        	-- set the volume to 0f
 185A: A0 17    ldy #$17			-- load 17 into Y, 17 is the pointer of 1cb5 area
 185C: A2 06    ldx #$06			-- load 06 into X, X = 06, 04, 02, 00
 185E: B9 B5 1C lda $1cb5, y		-- load 1cb5 area data to A, those are screen position of shifting ship
@@ -1350,7 +1352,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1866: 10 F6    bpl $185e		-- if Y is not zero, then go back to 185E, when we finish updating the ship occupy area, continue
 -- play explosion sound (noise)
 1868: A2 14    ldx #$14			-- load 14 into X, X = 14, 12, 10, 0e, 0c, 0a, 08, 06, 04, 02, 00
-186A: 20 42 17 jsr $1742        -- jump to $1742, load $9004 to A until zero, TV raster beam line; return until 9004 is zero
+186A: 20 42 17 jsr $1742        	-- jump to $1742, load $9004 to A until zero, TV raster beam line; return until 9004 is zero
 186D: 8A       txa				-- transfer A to X
 186E: 18       clc				-- clear carry
 186F: 69 A5    adc #$a5			-- A += A5, A = B9
@@ -1436,7 +1438,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 18F8: 8D 0C 90 sta $900c        -- clear 900c
 18FB: 85 68    sta $68          -- clear 68 -> audio pointer
 18FD: 85 12    sta $12          -- clear 12
-18FF: 60       rts				-- return
+18FF: 60       rts		-- return
 
 
 -- subroutine: move orbital docking pad
@@ -1464,8 +1466,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1924: E6 3F    inc $3f                  -- orbital left position on screen_hight 1e or 1d
 -- load orbital docking pad to the shifting buffer
 1926: A2 1F    ldx #$1f                 -- X = 1f
-1928: BD 90 1C lda $1c90, x				-- load left orbital docking pad 
-192B: 9D 68 1C sta $1c68, x				-- to image shifting buffer 1c68
+1928: BD 90 1C lda $1c90, x		-- load left orbital docking pad 
+192B: 9D 68 1C sta $1c68, x		-- to image shifting buffer 1c68
 192E: CA       dex                      -- X -- 
 192F: 10 F7    bpl $1928                -- if X is positive, loop again
  
@@ -1476,7 +1478,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1937: C9 16    cmp #$16                 -- compare with 16, the docking pad left the sereen
 1939: B0 05    bcs $1940                -- if we cannot see the pad, no need to update the screen
 
-193B: B9 B0 1C lda $1cb0, y	        	-- print new orbital docking pad parts on the screen; 1cb0 <-> orbital part characters and a space
+193B: B9 B0 1C lda $1cb0, y	        -- print new orbital docking pad parts on the screen; 1cb0 <-> orbital part characters and a space
 193E: 91 3E    sta ($3e), y             -- 3e: orbital left position on screen_low
 
 1940: 88       dey                      -- Y --
@@ -1495,7 +1497,7 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1957: 10 F1    bpl $194a                -- loop 8 times
 1959: E6 4C    inc $4c                  -- $4c++
 195B: E6 4D    inc $4d                  -- increase 4d indicator whether orbital docking pad moves in this turn
-195D: 60       rts						-- return 
+195D: 60       rts			-- return 
 
 
 -- subroutine: orbital docking pad position update
@@ -1508,8 +1510,8 @@ keyboard: 09-W, 11-A, 12-D, 20-space, 0f-Enter at C5, CB
 1968: A9 00    lda #$00                 -- A = 0
 196A: 91 3E    sta ($3e), y             -- store A to 3e, Y offset
 196C: 88       dey                      -- Y -- 
-196D: 10 F1    bpl $1960				-- if y is not zero, then go back to check the next colonist
-196F: 60       rts						-- return
+196D: 10 F1    bpl $1960		-- if y is not zero, then go back to check the next colonist
+196F: 60       rts			-- return
 
 
 -- subroutine play demo if we enter nothing.
@@ -1931,9 +1933,9 @@ FF    sta ($ff, x)
 1CB7: 00       brk
 1CB8: 00       brk
 -- 1CB9
--- explosion stage 4: _| |_
-					  _   _
-					   | |
+-- explosion stage 4: 	_| |_
+			_   _
+			 | |
 1CB9: FD EE ED sbc $edee, x
 1CBC: F0
 -- 1CBE 
